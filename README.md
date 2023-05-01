@@ -34,5 +34,5 @@ ssh root@<your-server-ip>
 2. Run the setup script using the following one-liner:
 
 ```bash
-curl -sSL https://github.com/pastelnetwork/ansible_playbook_for_initial_setup_of_fresh_machine_for_sn/automatic_sn_setup.sh | bash
+curl -sSL https://raw.githubusercontent.com/pastelnetwork/ansible_playbook_for_initial_setup_of_fresh_machine_for_sn/master/automatic_sn_setup.sh | bash
 ```
