@@ -4,7 +4,7 @@ function pause() {
   read -p "$*"
 }
 
-divider="-------------------------------------------------------------------"
+divider="\n-------------------------------------------------------------------\n"
 echo $divider
 echo "This script automates the setup and configuration of a Pastel Supernode (SN)"
 echo "starting with a fresh Ubuntu 22.04 server with a static IP. It does this by "
@@ -45,8 +45,9 @@ echo $divider
 echo "To save this private key, create a new file named 'id_ed25519.pem' on your local machine and copy the content above into the file."
 
 # Step 5: Provide a command to download the generated .pem file directly
+IP_ADDRESS=$(curl ipinfo.io/ip)
 echo "Alternatively, you can download the private key directly from the remote machine with the following command:"
-echo "scp ubuntu@<remote_server_ip>:/home/ubuntu/.ssh/id_ed25519 /path/to/save/id_ed25519.pem"
+echo "scp ubuntu@$IP_ADDRESS:/home/ubuntu/.ssh/id_ed25519 /path/to/save/id_ed25519.pem"
 echo $divider
 
 # Step 6: Grant password-less sudo access to the 'ubuntu' user
@@ -127,7 +128,6 @@ echo "1. Download the id_ed25519.pem file from the remote server to your home co
 echo "2. Download the pastelup tool for your OS from https://github.com/pastelnetwork/pastelup/releases/tag/v1.2.1-beta5"
 
 SSH_USER="ubuntu"
-IP_ADDRESS=$(curl ipinfo.io/ip)
 
 echo "3. Install the SuperNode remotely using the following command:"
 echo "./pastelup install supernode remote -r beta -n testnet --ssh-ip $IP_ADDRESS --ssh-user $SSH_USER --ssh-key <PATH_TO_SSH_PRIVATE_KEY_FILE>"
