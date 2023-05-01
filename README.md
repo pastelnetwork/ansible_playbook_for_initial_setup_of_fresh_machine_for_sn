@@ -6,7 +6,7 @@ This ansible playbook works in concert with the `automatic_sn_setup.sh` bash scr
 To use this script, you need:
 
 1. An Ubuntu server (tested on Ubuntu 22.10) with SSH access. It should have a static IP address, and a minimum of 8 CPU cores, 16gb of RAM, and a 1tb+ SSD/NVME drive.
-2. SSH access to the server with the 'ubuntu' user
+2. SSH access to the server with the 'root' user
 
 
 ## Features
@@ -25,10 +25,10 @@ To use this script, you need:
 
 Follow these steps to set up your Ubuntu server using this script:
 
-1. SSH into your Ubuntu server as the 'ubuntu' user:
+1. SSH into your Ubuntu server as the 'root' user:
 
 ```bash
-ssh ubuntu@<your-server-ip>
+ssh root@<your-server-ip>
 ```
 
 2. Run the setup script using the following one-liner:
