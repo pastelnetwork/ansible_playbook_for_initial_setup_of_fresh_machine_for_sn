@@ -1,0 +1,357 @@
+---
+- hosts: all
+  become: true
+  vars:
+    created_username: ubuntu
+    ansible_ssh_wait_timeout: 300
+
+  tasks:
+    - name: Install aptitude
+      apt:
+        name: aptitude
+        state: latest
+        update_cache: true
+
+    - name: Setup passwordless sudo for the created user
+      lineinfile:
+        path: "/etc/sudoers.d/{{ created_username }}"
+        state: present
+        line: "{{ created_username }} ALL=(ALL) NOPASSWD: ALL"
+        create: true
+        validate: '/usr/sbin/visudo -cf %s'
+
+    - name: Set authorized key for the created user
+      ansible.posix.authorized_key:
+        user: "{{ created_username }}"
+        state: present
+        key: "{{ lookup('file', lookup('env','HOME') + '/.ssh/id_ed25519.pub') }}"
+
+    - name: Update apt and install packages that are not available in Ubuntu 22.10
+      become: yes
+      apt:
+        pkg:
+          - automake
+          - build-essential
+          - certbot
+          - cmake
+          - direnv
+          - fail2ban
+          - ffmpeg
+          - fonts-powerline
+          - libboost-all-dev 
+          - logcheck
+          - logrotate
+          - logwatch
+          - p7zip-full
+          - python3-certbot-nginx
+          - ripgrep
+        state: latest
+        update_cache: true
+        autoremove: yes
+
+    - name: Remove dependencies that are no longer required.
+      apt:
+        autoremove: yes
+
+    - name: Add Google official GPG key
+      apt_key:
+        url: https://packages.cloud.google.com/apt/doc/apt-key.gpg
+        state: present
+
+    - name: Add Google chrome signing key
+      apt_key:
+        url: https://dl.google.com/linux/linux_signing_key.pub
+        state: present        
+
+    - name: Add Github signing key and apt repository
+      shell: |
+        curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | sudo dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg \
+        && sudo chmod go+r /usr/share/keyrings/githubcli-archive-keyring.gpg \
+        && echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null \
+
+    - name: Add the Google Chrome repository
+      apt_repository:
+        repo: deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main
+        state: present
+
+    - name: Update apt and install required system packages
+      become: yes
+      apt:
+        pkg:
+          - curl
+          - ffmpeg
+          - gcc
+          - g++
+          - gdb
+          - gdisk
+          - gh
+          - git
+          - golang-go
+          - google-chrome-stable
+          - htop
+          - libboost-all-dev 
+          - libssl-dev
+          - make
+          - nano
+          - nginx
+          - nodejs
+          - npm
+          - openssh-client
+          - openssh-server
+          - openssl
+          - rsync
+          - software-properties-common
+          - tmux
+          - ubuntu-release-upgrader-core
+          - ubuntu-restricted-extras
+          - ufw
+          - unzip
+          - vcsh
+          - vim
+          - vpnc
+          - zip
+          - zlib1g-dev
+          - zsh          
+          - zstd
+        state: latest
+        update_cache: true
+        autoremove: yes
+
+    - name: Search for existing Anaconda install
+      become: yes
+      find:
+        paths:
+          - /home/ubuntu/
+        patterns: Anaconda3-2022.10-Linux-x86_64.sh
+        file_type: file
+        recurse: yes
+      register: anaconda_search_result
+
+    - name: Download Anaconda Python
+      when: anaconda_search_result.matched == 0
+      become: yes
+      become_user: ubuntu
+      get_url:
+        url: https://repo.anaconda.com/archive/Anaconda3-2022.10-Linux-x86_64.sh
+        dest: /home/ubuntu/
+        mode: '0764'
+
+    - name: Install Anaconda
+      when: anaconda_search_result.matched == 0
+      become: yes
+      become_user: ubuntu
+      command: /home/ubuntu/Anaconda3-2022.10-Linux-x86_64.sh -b
+      args:
+        chdir: /home/ubuntu/
+      register: anaconda_output
+    
+    - debug:
+        var: anaconda_output.stdout_lines
+
+    - name: Add Anaconda to shell and init
+      become: yes
+      become_user: ubuntu
+      shell: |
+        eval "$(/home/ubuntu/anaconda3/bin/conda shell.zsh hook)"
+        conda init
+        conda install scikit-learn-intelex
+      ignore_errors: yes
+      register: conda_output
+
+    - debug:
+        var: conda_output.stdout_lines
+
+    - name: Install oh-my-zsh
+      become: yes
+      become_user: ubuntu
+      git:
+        repo: https://github.com/robbyrussell/oh-my-zsh
+        dest: /home/ubuntu/.oh-my-zsh 
+        force: yes
+
+    - name: Ensure the user 'ubuntu' has a zsh shell.
+      user:
+        name: ubuntu
+        shell: /bin/zsh
+        state: present
+      become: yes
+
+    - name: Create directory .local/bin directory
+      become: yes
+      become_user: ubuntu
+      file:
+        path: ~/.local/bin
+        state: directory
+
+    - name: Remove existing .tmux folder
+      become: yes
+      become_user: ubuntu
+      file: 
+        path: /home/ubuntu/.tmux
+        state: absent
+
+    - name: Remove existing tmux configurations
+      become: yes
+      become_user: ubuntu
+      file: 
+        path: "{{ item }}"
+        state: absent
+      with_items:
+        - /home/ubuntu/.tmux.conf
+        - /home/ubuntu/.tmux.conf.local
+        - /home/ubuntu/.tmux/.tmux.conf
+        - /home/ubuntu/.tmux/.tmux.conf.local
+
+    - name: Install custom tmux configuration
+      become: yes
+      become_user: ubuntu
+      git:
+        repo: https://github.com/gpakosz/.tmux.git
+        dest: /home/ubuntu/.tmux/
+
+    - name: Set up custom tmux configuration
+      become: yes
+      become_user: ubuntu
+      shell: |
+        cd /home/ubuntu/
+        ln -s -f .tmux/.tmux.conf
+        cp .tmux/.tmux.conf.local .
+
+    - name: Set up further tmux customizations
+      become: yes
+      become_user: ubuntu
+      blockinfile:
+        path: "/home/ubuntu/.tmux.conf.local"
+        insertafter: "# EOF"
+        block: |
+          set-option -g default-shell $SHELL
+          set -g mouse on
+          set-option -g history-limit 25000
+          set -g @plugin 'tmux-plugins/tmux-resurrect'
+
+    - name: Install powerlevel10k zsh theme
+      become: yes
+      become_user: ubuntu
+      git:
+        repo: https://github.com/romkatv/powerlevel10k.git 
+        dest: /home/ubuntu/powerlevel10k
+        depth: 1
+
+    - name: Install zsh-autosuggestions plugin
+      become: yes
+      become_user: ubuntu
+      git:
+        repo: https://github.com/zsh-users/zsh-autosuggestions
+        dest: /home/ubuntu/.oh-my-zsh/custom/plugins/zsh-autosuggestions
+        depth: 1
+
+    - name: Install Zoxide
+      become: yes
+      become_user: ubuntu
+      shell: curl -sS https://webinstall.dev/zoxide | bash
+      register: zoxide_output
+
+    - debug:
+        var: zoxide_output.stdout_lines
+
+
+    - name: Install mcfly
+      shell: |
+        rm -f /usr/local/bin/mcfly
+        curl -LSfs https://raw.githubusercontent.com/cantino/mcfly/master/ci/install.sh | sh -s -- --git cantino/mcfly
+      become: yes
+      register: mcfly_output
+
+    - debug:
+        var: mcfly_output.stdout_lines
+
+    - name: Install tmux plugin manager
+      become: yes
+      become_user: ubuntu
+      git:
+        repo: https://github.com/tmux-plugins/tpm.git
+        dest: /home/ubuntu/.tmux/plugins/tpm
+
+    - name: Install Rust
+      become: yes
+      become_user: ubuntu
+      shell: curl https://sh.rustup.rs -sSf | sh -s -- -y
+      register: install_rust_output
+
+    - debug:
+        var: install_rust_output.stdout_lines
+
+    - name: source the .zshrc file
+      become: yes
+      become_user: ubuntu
+      command: zsh -lc "source /home/ubuntu/.zshrc"
+      register: source_zshrc_file_output
+
+    - debug:
+        var: source_zshrc_file_output.stdout_lines    
+
+    - name: Remove old existing pastelup
+      become: yes
+      become_user: ubuntu
+      file: 
+        path: "{{ item }}"
+        state: absent
+      with_items:
+        - /home/ubuntu/pastelup-linux-amd64
+        - /home/ubuntu/pastelup
+
+    - name: Download pastelup to home directory and rename to "pastelup"
+      become: yes
+      become_user: ubuntu
+      get_url:
+        url: https://github.com/pastelnetwork/pastelup/releases/download/v1.2.1-beta5/pastelup-linux-amd64
+        dest: /home/ubuntu/pastelup
+        mode: '0755'
+
+    - name: Search for existing pastel install
+      become: yes
+      find:
+        paths:
+          - /home/ubuntu/
+        patterns: pasteld
+        file_type: file
+        recurse: yes
+      register: pasteld_search_result
+
+    - name: Run pastelup install command
+      when: pasteld_search_result.matched == 0
+      become: yes
+      become_user: ubuntu
+      command: '/home/ubuntu/pastelup install supernode -f -r latest -n testnet --log-file ~/pastelup.log --log-level debug'
+      register: pastelup_install_output
+
+    - debug:
+        var: pastelup_install_output.stdout_lines
+
+    - name: Check if we have already modified the pastel.conf file
+      become: yes
+      become_user: ubuntu
+      lineinfile:
+        path: /home/ubuntu/.pastel/pastel.conf
+        line: experimentalfeatures=1
+        state: absent
+      register: line_present
+
+    - name: Add lines to pastel.conf if not already there
+      when: line_present.changed == 0
+      become: yes
+      become_user: ubuntu
+      blockinfile:
+        path: /home/ubuntu/.pastel/pastel.conf
+        block: |
+          rest=1
+          txindex=1
+          rpcworkqueue=maximum
+          minrelaytxfee=0.00001
+          maxmempool=20000
+          server=1
+          listen=1
+          gen=0
+          experimentalfeatures=1
+          insightexplorer=1
+          zmergetoaddress=1        
