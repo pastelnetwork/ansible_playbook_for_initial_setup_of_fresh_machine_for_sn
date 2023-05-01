@@ -62,11 +62,16 @@ echo "Running the Ansible playbook on the local machine..."
 ansible-playbook -i "$inventory_file" "$temp_dir/local_version_of_fresh_vps_setup_playbook_for_new_sn.yml"
 echo "Ansible playbook completed."
 
-# Step 12: Cleanup
+# Step 12: Install additional Rust-based utilities
+echo "Installing additional Rust-based utilities (lsd, du-dust, bat, ripgrep, exa, tokei, hyperfine)..."
+sudo -u ubuntu bash -c 'cargo install lsd du-dust bat ripgrep exa tokei hyperfine'
+echo "Rust-based utilities installed successfully."
+
+# Step 13: Cleanup
 echo "Cleaning up temporary files..."
 rm -rf "$temp_dir"
 
-# Step 13: Offer to clear sensitive information from the console
+# Step 14: Offer to clear sensitive information from the console
 read -p "Do you want to clear the console of sensitive information? (y/n): " response
 if [[ $response =~ ^([yY][eE][sS]|[yY])$ ]]; then
   clear
