@@ -80,4 +80,9 @@ else
   echo "Sensitive information remains in the console."
 fi
 
+# Step 15: Update and upgrade system packages, and remove unused packages
+echo "Updating and upgrading system packages, and removing unused packages..."
+sudo apt update && sudo apt upgrade -y && sudo apt autoremove -y
+echo "System packages updated and upgraded. Unused packages removed."
+
 echo "Script completed. Your SN is now set up and configured!"
