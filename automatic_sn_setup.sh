@@ -176,6 +176,11 @@ function install_additional_rust_based_utilities() {
   echo -e $SECTION_DIVIDER
 }
 
+function create_and_set_permissions_for_zsh_history() {
+  sudo -u ubuntu touch /home/ubuntu/.zsh_history
+  sudo -u ubuntu chmod 600 /home/ubuntu/.zsh_history
+}
+
 function display_final_instructions() {
   echo "The automated setup is complete. The output of the script, including the generated password and private key content, has been saved to:"
   echo "/home/ubuntu/output_of_automated_sn_setup_script.txt"
@@ -219,6 +224,13 @@ function display_final_instructions() {
   echo -e $SECTION_DIVIDER
 }
 
+function filter_output_file() {
+  sudo cp /root/output_of_automated_sn_setup_script.txt /root/output_of_automated_sn_setup_script_unfiltered.txt
+  sudo grep -vE '^\s*\[.+ INFO\s*$|^\s*"Downloading... .+ complete",$' /root/output_of_automated_sn_setup_script_unfiltered.txt > /root/output_of_automated_sn_setup_script.txt
+  sudo rm /root/output_of_automated_sn_setup_script_unfiltered.txt
+}
+
+
 function main() {
   check_and_install_dependencies
   prompt_for_confirmation
@@ -237,7 +249,9 @@ function main() {
   run_ansible_playbook
   verify_ansible_playbook_completion
   install_additional_rust_based_utilities
+  create_and_set_permissions_for_zsh_history
   display_final_instructions
+  filter_output_file
 }
 
 exec > >(tee -i /root/output_of_automated_sn_setup_script.txt)
