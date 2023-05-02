@@ -212,6 +212,7 @@ function display_final_instructions() {
   
   echo "10. Check the masternode status again:"
   echo "./pastel/pastel-cli masternode status"
+  echo -e $SECTION_DIVIDER
 }
 
 function main() {
@@ -235,5 +236,6 @@ function main() {
   display_final_instructions
 }
 
-exec > >(tee -i /home/ubuntu/output_of_automated_sn_setup_script.txt)
+exec > >(tee -i /root/output_of_automated_sn_setup_script.txt)
+echo "You can view the output of this script in /root/output_of_automated_sn_setup_script.txt"
 main
