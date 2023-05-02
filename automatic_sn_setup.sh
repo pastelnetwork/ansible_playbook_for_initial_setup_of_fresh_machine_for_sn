@@ -1,140 +1,159 @@
 #!/bin/bash
 
-function pause() {
-  read -p "$*"
+# Environment variables
+PASTEL_REPO="https://github.com/pastelnetwork"
+PLAYBOOK_REPO="ansible_playbook_for_initial_setup_of_fresh_machine_for_sn"
+PLAYBOOK_NAME="local_version_of_fresh_vps_setup_playbook_for_new_sn.yml"
+SECTION_DIVIDER="\n-------------------------------------------------------------------\n"
+
+# Check for dependencies
+function check_dependencies() {
+  missing_dependencies=""
+  for dependency in curl openssl git ansible; do
+    if ! command -v "$dependency" >/dev/null; then
+      missing_dependencies+="$dependency "
+    fi
+  done
+
+  if [ -n "$missing_dependencies" ]; then
+    echo "Missing dependencies: $missing_dependencies"
+    echo "Please install them before running this script."
+    exit 1
+  fi
 }
 
+# Prompt for confirmation
+function prompt_for_confirmation() {
+  echo "This script automates the setup and configuration of a Pastel Supernode (SN)"
+  echo "on a fresh Ubuntu 22.04 server with a static IP. Please review the script's"
+  echo "assumptions and prerequisites before proceeding."
+  read -p "Do you want to proceed? (y/n): " response
+  if [[ ! $response =~ ^([yY][eE][sS]|[yY])$ ]]; then
+    echo "Aborted."
+    exit 1
+  fi
+}
+
+# Create setup progress file
+function create_setup_progress_file() {
+  if [ ! -f /home/ubuntu/setup_progress.txt ]; then
+    sudo -u ubuntu touch /home/ubuntu/setup_progress.txt
+  fi
+}
+
+# Update progress function
 function update_progress() {
-  echo "$1" | sudo -u ubuntu tee -a /home/ubuntu/setup_progress.txt >/dev/null
+  sudo -u ubuntu bash -c "echo $1 >> /home/ubuntu/setup_progress.txt"
 }
 
-divider="\n-------------------------------------------------------------------\n"
-echo $divider
-echo "This script automates the setup and configuration of a Pastel Supernode (SN)"
-echo "starting with a fresh Ubuntu 22.04 server with a static IP. It does this by "
-echo "installing essential tools, packages, and custom configurations using an"
-echo "Ansible playbook. The script installs git and Ansible, then downloads and"
-echo "runs the playbook, and then cleans up temporary files. The playbook itself"
-echo "does most of the work of setting up the SN, including installing the pastelup"
-echo "tool which is in turn used to install and the SN software and configure it."
-echo $divider
+function generate_secure_password() {
+  if ! grep -q "step1_completed" /home/ubuntu/setup_progress.txt; then
+    echo "Generating a secure password for the 'ubuntu' user..."
+    password=$(openssl rand -base64 30 | tr -dc 'a-zA-Z0-9!@#$%^&*()_+?><:;,' | head -c 40)
 
-# Create setup_progress.txt if it doesn't exist
-if [ ! -f /home/ubuntu/setup_progress.txt ]; then
-  sudo -u ubuntu touch /home/ubuntu/setup_progress.txt
-fi
+    echo ""
+    echo "Generated password: $password"
+    echo "Please store this password securely in a password manager or other secure method."
+    echo -e $SECTION_DIVIDER
+    echo -n 'Press [Enter] key when you have stored the password...'
+    read -r _
 
-# Step 1: Generate a secure password for the 'ubuntu' user
-if ! grep -q "step1_completed" /home/ubuntu/setup_progress.txt; then
-  echo "Generating a secure password for the 'ubuntu' user..."
-  password=$(openssl rand -base64 30 | tr -dc 'a-zA-Z0-9!@#$%^&*()_+?><:;,' | head -c 40)
+    update_progress "step1_completed"
+  fi
+}
 
-  echo ""
-  echo "Generated password: $password"
-  echo "Please store this password securely in a password manager or other secure method."
-  echo $divider
-  pause 'Press [Enter] key when you have stored the password...'
+# Create the 'ubuntu' user with the generated password and add to the sudo group
+function create_ubuntu_user() {
+  if ! grep -q "step2_completed" /home/ubuntu/setup_progress.txt; then
+    if ! id -u ubuntu >/dev/null 2>&1; then
+      echo "Creating the 'ubuntu' user and adding to the sudo group..."
+      sudo adduser --gecos "" --disabled-password ubuntu
+      echo "ubuntu:$password" | sudo chpasswd
+      sudo usermod -aG sudo ubuntu
+      echo -e $SECTION_DIVIDER
+    else
+      echo "The 'ubuntu' user already exists."
+    fi
 
-  update_progress "step1_completed"
-fi
+    update_progress "step2_completed"
+  fi
+}
 
-# Step 2: Create the 'ubuntu' user with the generated password and add to the sudo group
-if ! grep -q "step2_completed" /home/ubuntu/setup_progress.txt; then
-  echo "Creating the 'ubuntu' user and adding to the sudo group..."
-  sudo adduser --gecos "" --disabled-password ubuntu
-  echo "ubuntu:$password" | sudo chpasswd
-  sudo usermod -aG sudo ubuntu
-  echo $divider
+# Generate an ed25519 SSH key for the 'ubuntu' user
+function generate_ssh_key() {
+  if ! grep -q "step3_completed" /home/ubuntu/setup_progress.txt; then
+    if [ ! -f /home/ubuntu/.ssh/id_ed25519 ]; then
+      echo "Generating an ed25519 SSH key for the 'ubuntu' user..."
+      sudo -u ubuntu mkdir -p /home/ubuntu/.ssh
+      sudo -u ubuntu ssh-keygen -t ed25519 -f /home/ubuntu/.ssh/id_ed25519 -N ""
+      echo -e $SECTION_DIVIDER
+    else
+      echo "An ed25519 SSH key already exists for the 'ubuntu' user."
+    fi
 
-  update_progress "step2_completed"
-fi
+    update_progress "step3_completed"
+  fi
+}
 
-# Step 3: Generate an ed25519 SSH key for the 'ubuntu' user
-if ! grep -q "step3_completed" /home/ubuntu/setup_progress.txt; then
-  echo "Generating an ed25519 SSH key for the 'ubuntu' user..."
-  sudo -u ubuntu mkdir -p /home/ubuntu/.ssh
-  sudo -u ubuntu ssh-keygen -t ed25519 -f /home/ubuntu/.ssh/id_ed25519 -N ""
-  echo $divider
-
-  update_progress "step3_completed"
-fi
-
-# Step 4: Display the .pem file content and instructions on how to save it
-if ! grep -q "step4_completed" /home/ubuntu/setup_progress.txt; then
+# Display the .pem file content and instructions on how to save it
+function display_pem_file_content() {
   echo "Here is the content of the id_ed25519 private key file:"
   sudo -u ubuntu cat /home/ubuntu/.ssh/id_ed25519
-  echo $divider
+  echo -e $SECTION_DIVIDER
+}
+
+function save_pem_file_instructions() {
   echo "To save this private key, create a new file named 'id_ed25519.pem' on your local machine and copy the content above into the file."
+}
 
-  update_progress "step4_completed"
-fi
-
-# Step 5: Provide a command to download the generated .pem file directly
-if ! grep -q "step5_completed" /home/ubuntu/setup_progress.txt; then
+function scp_command_to_download_pem_file() {
   IP_ADDRESS=$(curl ipinfo.io/ip)
   echo "Alternatively, you can download the private key directly from the remote machine with the following command:"
   echo "scp ubuntu@$IP_ADDRESS:/home/ubuntu/.ssh/id_ed25519 /path/to/save/id_ed25519.pem"
-  echo $divider
+  echo -e $SECTION_DIVIDER
+}
 
-  update_progress "step5_completed"
-fi
-
-# Step 6: Grant password-less sudo access to the 'ubuntu' user
-if ! grep -q "step6_completed" /home/ubuntu/setup_progress.txt; then
+function grant_passwordless_sudo_access() {
   echo "Granting password-less sudo access to the 'ubuntu' user..."
   echo "ubuntu ALL=(ALL) NOPASSWD: ALL" | sudo tee /etc/sudoers.d/ubuntu
-  echo $divider
+  echo -e $SECTION_DIVIDER
+}
 
-  update_progress "step6_completed"
-fi
-
-# Step 7: Update the package cache and install the required packages
-if ! grep -q "step7_completed" /home/ubuntu/setup_progress.txt; then
+function update_package_cache_and_install_required_packages() {
   echo "Updating package cache and installing required packages (Ansible and Git)..."
   sudo apt-get update
   sudo apt-get install -y ansible git
-  echo $divider
+  echo -e $SECTION_DIVIDER
+}
 
-  update_progress "step7_completed"
-fi
-
-# Step 8: Create a temporary directory for the playbook
-if ! grep -q "step8_completed" /home/ubuntu/setup_progress.txt; then
+function create_temp_directory_for_playbook() {
   echo "Creating a temporary directory for the Ansible playbook..."
-  temp_dir=$(mktemp -d)
+  playbook_temp_dir=$(mktemp -d)
+}
 
-  update_progress "step8_completed"
-fi
-
-# Step 9: Clone the repository containing the playbook
-if ! grep -q "step9_completed" /home/ubuntu/setup_progress.txt; then
+function clone_playbook_repository() {
   echo "Cloning the playbook repository..."
-  git clone https://github.com/pastelnetwork/ansible_playbook_for_initial_setup_of_fresh_machine_for_sn.git "$temp_dir"
+  git clone "${PASTEL_REPO}/${PLAYBOOK_REPO}" "$playbook_temp_dir"
+}
 
-  update_progress "step9_completed"
-fi
-
-# Step 10: Create a temporary inventory file for the local machine
-if ! grep -q "step10_completed" /home/ubuntu/setup_progress.txt; then
+function create_temp_inventory_file() {
   echo "Creating a temporary inventory file for the local machine..."
-  inventory_file="$temp_dir/inventory.ini"
-  echo "localhost ansible_connection=local" > "$inventory_file"
+  ansible_inventory_file="$playbook_temp_dir/inventory.ini"
+  echo "localhost ansible_connection=local" > "$ansible_inventory_file"
+}
 
-  update_progress "step10_completed"
-fi
+function run_ansible_playbook() {
+  if ! grep -q "step9_completed" /home/ubuntu/setup_progress.txt; then
+    echo "Switching to the ubuntu user and then running the Ansible playbook on the local machine..."
+    sudo su - ubuntu -c "ansible-playbook -i \"$ansible_inventory_file\" \"$playbook_temp_dir/$PLAYBOOK_NAME\""
+    echo "Ansible playbook completed."
+    update_progress "step9_completed"
+  else
+    echo "Ansible playbook has already been run successfully."
+  fi
+}
 
-# Step 11: Run the Ansible playbook on the local machine
-if ! grep -q "step11_completed" /home/ubuntu/setup_progress.txt; then
-  echo "Switching to the ubuntu user and then running the Ansible playbook on the local machine..."
-  sudo su - ubuntu
-  ansible-playbook -i "$inventory_file" "$temp_dir/local_version_of_fresh_vps_setup_playbook_for_new_sn.yml"
-  echo "Ansible playbook completed."
-
-  update_progress "step11_completed"
-fi
-
-# Step 11.5: Check if the ansible playbook finished correctly
-if ! grep -q "step11_5_completed" /home/ubuntu/setup_progress.txt; then
+function verify_ansible_playbook_completion() {
   echo "Verifying that the ansible playbook finished correctly..."
   if [ -f /home/ubuntu/.pastel/pastel.conf ] && grep -q "rpcworkqueue=maximum" /home/ubuntu/.pastel/pastel.conf; then
     echo "Ansible playbook finished successfully."
@@ -142,87 +161,58 @@ if ! grep -q "step11_5_completed" /home/ubuntu/setup_progress.txt; then
     echo "Ansible playbook did not finish successfully. Exiting."
     exit 1
   fi
-  echo $divider
+  echo -e $SECTION_DIVIDER
+}
 
-  update_progress "step11_5_completed"
-fi
-
-# Step 12: Install additional Rust-based utilities
-if ! grep -q "step12_completed" /home/ubuntu/setup_progress.txt; then
+function install_additional_rust_based_utilities() {
   echo "Installing additional Rust-based utilities (lsd, du-dust, bat, ripgrep, exa, tokei, hyperfine)..."
   sudo -u ubuntu bash -c 'cargo install lsd du-dust bat ripgrep exa tokei hyperfine'
   echo "Rust-based utilities installed successfully."
-  echo $divider
+  echo -e $SECTION_DIVIDER
+}
 
-  update_progress "step12_completed"
-fi
-
-# Step 13: Cleanup
-if ! grep -q "step13_completed" /home/ubuntu/setup_progress.txt; then
+function cleanup_temporary_files() {
   echo "Cleaning up temporary files..."
-  rm -rf "$temp_dir"
+  rm -rf "$playbook_temp_dir"
+}
 
-  update_progress "step13_completed"
-fi
-
-# Step 14: Save script output to a file
-if ! grep -q "step14_completed" /home/ubuntu/setup_progress.txt; then
+function save_script_output_to_file() {
   echo "Saving console output to /home/ubuntu/output_of_automated_sn_setup_script.txt"
-  script_output=$(echo $divider; echo "Generated password: $password"; echo $divider; cat /home/ubuntu/.ssh/id_ed25519; echo $divider)
+  script_output=$(echo -e $SECTION_DIVIDER; echo "Generated password: $password"; echo -e $SECTION_DIVIDER; cat /home/ubuntu/.ssh/id_ed25519; echo -e $SECTION_DIVIDER)
   echo "$script_output" > /home/ubuntu/output_of_automated_sn_setup_script.txt
-  echo "Please note that this file contains sensitive information. Delete it when it is no longer needed."
-  echo $divider
+  echo -e $SECTION_DIVIDER
+}
 
-  update_progress "step14_completed"
-fi
+function display_final_instructions() {
+  echo "The automated setup is complete. The output of the script, including the generated password and private key content, has been saved to:"
+  echo "/home/ubuntu/output_of_automated_sn_setup_script.txt"
+  echo "You can view the contents of this file using the 'cat' command:"
+  echo "cat /home/ubuntu/output_of_automated_sn_setup_script.txt"
+  echo "Please make sure to save the password and private key in a secure location, as they are necessary for accessing this SuperNode."
+  echo -e $SECTION_DIVIDER
+}
 
-# Step 15: Offer to clear sensitive information from the console
-read -p "Do you want to clear the console of sensitive information? (y/n): " response
-if [[ $response =~ ^([yY][eE][sS]|[yY])$ ]]; then
-  clear
-  echo "Console cleared."
-else
-  echo "Sensitive information remains in the console."
-fi
+function main() {
+  check_dependencies
+  prompt_for_confirmation
+  create_setup_progress_file
+  generate_secure_password
+  create_ubuntu_user
+  generate_ssh_key
+  display_pem_file_content
+  save_pem_file_instructions
+  scp_command_to_download_pem_file
+  grant_passwordless_sudo_access
+  update_package_cache_and_install_required_packages
+  create_temp_directory_for_playbook
+  clone_playbook_repository
+  create_temp_inventory_file
+  run_ansible_playbook
+  verify_ansible_playbook_completion
+  install_additional_rust_based_utilities
+  cleanup_temporary_files
+  save_script_output_to_file
+  display_final_instructions
+}
 
-# Step 16: Update and upgrade system packages, and remove unused packages
-echo "Updating and upgrading system packages, and removing unused packages..."
-sudo apt update && sudo apt upgrade -y && sudo apt autoremove -y
-echo "System packages updated and upgraded. Unused packages removed."
-
-echo $divider
-echo "Script completed! Your SN is partly set up, but still needs to be activated"
-echo "to be used in the suggested hot/cold setup. You will need to complete these steps"
-echo "on your home computer:"
-
-echo "1. Download the id_ed25519.pem file from the remote server to your home computer."
-echo "2. Download the pastelup tool for your OS from https://github.com/pastelnetwork/pastelup/releases/tag/v1.2.1-beta5"
-
-SSH_USER="ubuntu"
-
-echo "3. Install the SuperNode remotely using the following command:"
-echo "./pastelup install supernode remote -r beta -n testnet --ssh-ip $IP_ADDRESS --ssh-user $SSH_USER --ssh-key <PATH_TO_SSH_PRIVATE_KEY_FILE>"
-
-echo "4. Initialize the SuperNode with a cold/hot setup using the following command:"
-echo "./pastelup init supernode coldhot --new --name <SN_name> --ssh-ip $IP_ADDRESS --ssh-user $SSH_USER --ssh-key <PATH_TO_SSH_PRIVATE_KEY_FILE>"
-
-echo "5. Start the masternode with the following command:"
-echo "./pastel-cli masternode start-alias <SN_name>"
-
-echo "6. Check the masternode status and list your PastelID on the hot node:"
-echo "./pastel/pastel-cli masternode status"
-echo "./pastel/pastel-cli pastelid list mine"
-echo "Remember the PastelID returned by the last command."
-
-echo "7. Check your balance and generate a new address:"
-echo "./pastel/pastel-cli getbalance"
-echo "./pastel/pastel-cli getnewaddress"
-echo "Remember the address returned by the last command."
-
-echo "8. Send coins to the address from step 7."
-
-echo "9. Register the masternode with the following command:"
-echo "./pastel/pastel-cli tickets register mnid <PastelID_returned_in_step_6> <PastelID_Passphrase> <Address_generated_in_step_7>"
-
-echo "10. Check the masternode status again:"
-echo "./pastel/pastel-cli masternode status"
+main
