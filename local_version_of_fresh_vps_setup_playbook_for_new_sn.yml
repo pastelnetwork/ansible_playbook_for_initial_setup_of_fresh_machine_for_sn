@@ -291,6 +291,16 @@
     - debug:
         var: source_zshrc_file_output.stdout_lines    
 
+    - name: Download the p10k settings file from GitHub and save it to the user's home directory
+      ansible.builtin.get_url:
+        url: https://raw.githubusercontent.com/pastelnetwork/ansible_playbook_for_initial_setup_of_fresh_machine_for_sn/master/p10k.zsh
+        dest: /home/ubuntu/.p10k.zsh
+        owner: ubuntu
+        group: ubuntu
+        mode: '0644'
+      become: yes
+      become_user: ubuntu
+
     - name: Remove old existing pastelup
       become: yes
       become_user: ubuntu
