@@ -18,7 +18,6 @@ source $ZSH/oh-my-zsh.sh
 export MANPATH="/usr/local/man:$MANPATH"
 export PATH="/home/ubuntu/.local/bin:$PATH"
 eval "$(mcfly init zsh)"
-eval "$(zoxide init zsh)"
 alias ls='lsd --inode --long'
 alias cat='bat'
 alias du='dust'
