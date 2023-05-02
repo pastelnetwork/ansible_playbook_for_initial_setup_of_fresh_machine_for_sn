@@ -6,19 +6,24 @@ PLAYBOOK_REPO="ansible_playbook_for_initial_setup_of_fresh_machine_for_sn"
 PLAYBOOK_NAME="local_version_of_fresh_vps_setup_playbook_for_new_sn.yml"
 SECTION_DIVIDER="\n-------------------------------------------------------------------\n"
 
-# Check for dependencies
-function check_dependencies() {
-  missing_dependencies=""
+# Check for dependencies and install them if not present
+function check_and_install_dependencies() {
+  dependencies_to_install=""
   for dependency in curl openssl git ansible; do
     if ! command -v "$dependency" >/dev/null; then
-      missing_dependencies+="$dependency "
+      dependencies_to_install+="$dependency "
     fi
   done
 
-  if [ -n "$missing_dependencies" ]; then
-    echo "Missing dependencies: $missing_dependencies"
-    echo "Please install them before running this script."
-    exit 1
+  if [ -n "$dependencies_to_install" ]; then
+    echo "Missing dependencies: $dependencies_to_install"
+    echo "Installing missing dependencies..."
+    sudo apt-get update
+    for dependency in $dependencies_to_install; do
+      sudo apt-get install -y "$dependency"
+    done
+  else
+    echo "All required dependencies are installed."
   fi
 }
 
@@ -193,7 +198,7 @@ function display_final_instructions() {
 }
 
 function main() {
-  check_dependencies
+  check_and_install_dependencies
   prompt_for_confirmation
   create_setup_progress_file
   generate_secure_password
