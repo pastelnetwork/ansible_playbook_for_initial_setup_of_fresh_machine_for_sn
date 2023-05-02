@@ -191,12 +191,15 @@ function display_final_instructions() {
   echo "Script completed! Your SN is partly set up, but still needs to be activated"
   echo "to be used in the suggested hot/cold setup. You will need to complete these steps"
   echo "on your home computer:"
+  echo -e $SECTION_DIVIDER
   echo "1. Download the /home/ubuntu/.ssh/id_ed25519.pem file from the remote server to your home computer."
+  echo -e $SECTION_DIVIDER
   echo "2. Download the pastelup tool for your OS from https://github.com/pastelnetwork/pastelup/releases/tag/v1.2.1-beta5"
+  echo -e $SECTION_DIVIDER
   echo "3. Install the SuperNode remotely using the following command:"
   echo "./pastelup install supernode remote -r beta -n testnet --ssh-ip $IP_ADDRESS --ssh-user $SSH_USER --ssh-key <PATH_TO_SSH_PRIVATE_KEY_FILE>"
   echo -e $SECTION_DIVIDER
-  echo "4. Initialize the SuperNode with a cold/hot setup using the following command ('SN_name' can be something like 'My_SN_01'):"
+  echo "4. Initialize the SuperNode with a cold/hot setup using the following command ('<SN_name>' can be something like 'My_SN_01'):"
   echo "./pastelup init supernode coldhot --new --name <SN_name> --ssh-ip $IP_ADDRESS --ssh-user $SSH_USER --ssh-key <PATH_TO_SSH_PRIVATE_KEY_FILE>"
   echo -e $SECTION_DIVIDER
   echo "5. Start the masternode with the following command:"
