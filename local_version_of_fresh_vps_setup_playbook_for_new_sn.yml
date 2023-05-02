@@ -246,16 +246,6 @@
         dest: /home/ubuntu/.oh-my-zsh/custom/plugins/zsh-autosuggestions
         depth: 1
 
-    - name: Install Zoxide
-      become: yes
-      become_user: ubuntu
-      shell: curl -sS https://webinstall.dev/zoxide | bash
-      register: zoxide_output
-
-    - debug:
-        var: zoxide_output.stdout_lines
-
-
     - name: Install mcfly
       shell: |
         rm -f /usr/local/bin/mcfly
@@ -281,6 +271,17 @@
 
     - debug:
         var: install_rust_output.stdout_lines
+
+    - name: Download the zshrc file from GitHub and save it to the user's home directory
+      ansible.builtin.get_url:
+        url: https://raw.githubusercontent.com/pastelnetwork/ansible_playbook_for_initial_setup_of_fresh_machine_for_sn/master/zshrc
+        dest: /home/ubuntu/.zshrc
+        owner: ubuntu
+        group: ubuntu
+        mode: '0644'
+        backup: yes
+      become: yes
+      become_user: ubuntu
 
     - name: source the .zshrc file
       become: yes
