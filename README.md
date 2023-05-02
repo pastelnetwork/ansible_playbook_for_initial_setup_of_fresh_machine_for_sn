@@ -1,5 +1,5 @@
 # Automated Setup of a Fresh Machine for Use as a Pastel Supernode
-This ansible playbook works in concert with the `automatic_sn_setup.sh` bash script (also included in this repo) to automate as much of the initial configuration as possible for a new Pastel Supernode (SN) on a dedicated fresh Ubuntu 22.04+ instance.
+This ansible playbook (`local_version_of_fresh_vps_setup_playbook_for_new_sn.yml`) works in concert with the `automatic_sn_setup.sh` bash script (also included in this repo) to automate as much of the initial configuration as possible for a new Pastel Supernode (SN) on a dedicated fresh Ubuntu 22.04+ instance.
 
 ## Prerequisites
 
