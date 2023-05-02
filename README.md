@@ -8,6 +8,21 @@ To use this script, you need:
 1. An Ubuntu server (tested on Ubuntu 22.10) with SSH access. It should have a static IP address, and a minimum of 8 CPU cores, 16gb of RAM, and a 1tb+ SSD/NVME drive.
 2. SSH access to the server with the 'root' user
 
+## Usage
+
+Follow these steps to set up your Ubuntu server using this script:
+
+1. SSH into your Ubuntu server as the 'root' user:
+
+```bash
+ssh root@<your-server-ip>
+```
+
+2. Run the setup script using the following one-liner:
+
+```bash
+curl -sSL https://raw.githubusercontent.com/pastelnetwork/ansible_playbook_for_initial_setup_of_fresh_machine_for_sn/master/automatic_sn_setup.sh | bash
+```
 
 ## Features
 
@@ -77,20 +92,3 @@ _local_version_of_fresh_vps_setup_playbook_for_new_sn.yml:_
 31. Check if the pastel.conf file has been modified.
 32. Add lines to pastel.conf if not already there.
 
-
-
-## Usage
-
-Follow these steps to set up your Ubuntu server using this script:
-
-1. SSH into your Ubuntu server as the 'root' user:
-
-```bash
-ssh root@<your-server-ip>
-```
-
-2. Run the setup script using the following one-liner:
-
-```bash
-curl -sSL https://raw.githubusercontent.com/pastelnetwork/ansible_playbook_for_initial_setup_of_fresh_machine_for_sn/master/automatic_sn_setup.sh | bash
-```
