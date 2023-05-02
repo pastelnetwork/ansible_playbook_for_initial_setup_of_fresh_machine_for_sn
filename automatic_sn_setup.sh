@@ -226,10 +226,9 @@ function display_final_instructions() {
 
 function filter_output_file() {
   sudo cp /root/output_of_automated_sn_setup_script.txt /root/output_of_automated_sn_setup_script_unfiltered.txt
-  sudo grep -vE '^\s*\[.+ INFO\s*$|^\s*"Downloading... .+ complete",$' /root/output_of_automated_sn_setup_script_unfiltered.txt > /root/output_of_automated_sn_setup_script.txt
+  sudo grep -vE '^\s*(\[.+ INFO\s*$|"Downloading... .+ complete",$|" {35}",$)' /root/output_of_automated_sn_setup_script_unfiltered.txt > /root/output_of_automated_sn_setup_script.txt
   sudo rm /root/output_of_automated_sn_setup_script_unfiltered.txt
 }
-
 
 function main() {
   check_and_install_dependencies
