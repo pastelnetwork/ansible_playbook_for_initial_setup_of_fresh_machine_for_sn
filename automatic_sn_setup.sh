@@ -124,26 +124,27 @@ function update_package_cache_and_install_required_packages() {
   echo -e $SECTION_DIVIDER
 }
 
-function create_temp_directory_for_playbook() {
-  echo "Creating a temporary directory for the Ansible playbook..."
-  playbook_temp_dir=$(mktemp -d)
+function create_directory_for_playbook() {
+  echo "Creating a directory for the Ansible playbook..."
+  playbook_dir="/home/ubuntu/sn_setup_files"
+  sudo -u ubuntu mkdir -p "$playbook_dir"
 }
 
 function clone_playbook_repository() {
   echo "Cloning the playbook repository..."
-  git clone "${PASTEL_REPO}/${PLAYBOOK_REPO}" "$playbook_temp_dir"
+  git clone "${PASTEL_REPO}/${PLAYBOOK_REPO}" "$playbook_dir"
 }
 
-function create_temp_inventory_file() {
-  echo "Creating a temporary inventory file for the local machine..."
-  ansible_inventory_file="$playbook_temp_dir/inventory.ini"
+function create_inventory_file() {
+  echo "Creating an inventory file for the local machine..."
+  ansible_inventory_file="$playbook_dir/inventory.ini"
   echo "localhost ansible_connection=local" > "$ansible_inventory_file"
 }
 
 function run_ansible_playbook() {
   if ! grep -q "step9_completed" /root/setup_progress.txt; then
     echo "Switching to the ubuntu user and then running the Ansible playbook on the local machine..."
-    sudo su - ubuntu -c "(ansible-playbook -i \"$ansible_inventory_file\" \"$playbook_temp_dir/$PLAYBOOK_NAME\" && echo \"step9_completed\" >> /root/setup_progress.txt)"
+    sudo su - ubuntu -c "(ansible-playbook -i \"$ansible_inventory_file\" \"$playbook_dir/$PLAYBOOK_NAME\" && echo \"step9_completed\" >> /root/setup_progress.txt)"
     echo "Ansible playbook completed."
   else
     echo "Ansible playbook has already been run successfully."
@@ -165,18 +166,6 @@ function install_additional_rust_based_utilities() {
   echo "Installing additional Rust-based utilities (lsd, du-dust, bat, ripgrep, exa, tokei, hyperfine)..."
   sudo -u ubuntu bash -c 'cargo install lsd du-dust bat ripgrep exa tokei hyperfine'
   echo "Rust-based utilities installed successfully."
-  echo -e $SECTION_DIVIDER
-}
-
-function cleanup_temporary_files() {
-  echo "Cleaning up temporary files..."
-  rm -rf "$playbook_temp_dir"
-}
-
-function save_script_output_to_file() {
-  echo "Saving console output to /home/ubuntu/output_of_automated_sn_setup_script.txt"
-  script_output=$(echo -e $SECTION_DIVIDER; echo "Generated password: $password"; echo -e $SECTION_DIVIDER; cat /home/ubuntu/.ssh/id_ed25519; echo -e $SECTION_DIVIDER)
-  echo "$script_output" > /home/ubuntu/output_of_automated_sn_setup_script.txt
   echo -e $SECTION_DIVIDER
 }
 
@@ -237,15 +226,14 @@ function main() {
   scp_command_to_download_pem_file
   grant_passwordless_sudo_access
   update_package_cache_and_install_required_packages
-  create_temp_directory_for_playbook
+  create_directory_for_playbook
   clone_playbook_repository
-  create_temp_inventory_file
+  create_inventory_file
   run_ansible_playbook
   verify_ansible_playbook_completion
   install_additional_rust_based_utilities
-  cleanup_temporary_files
-  save_script_output_to_file
   display_final_instructions
 }
 
+exec > >(tee -i /home/ubuntu/output_of_automated_sn_setup_script.txt)
 main
