@@ -39,8 +39,8 @@ function prompt_for_confirmation() {
 function create_setup_progress_file() {
   if [ ! -f /tmp/setup_progress.txt ]; then
     touch /tmp/setup_progress.txt
-    chmod 666 /tmp/setup_progress.txt
   fi
+  chmod 666 /tmp/setup_progress.txt
 }
 
 # Update progress function
