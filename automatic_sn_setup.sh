@@ -187,6 +187,42 @@ function display_final_instructions() {
   echo "cat /home/ubuntu/output_of_automated_sn_setup_script.txt"
   echo "Please make sure to save the password and private key in a secure location, as they are necessary for accessing this SuperNode."
   echo -e $SECTION_DIVIDER
+  echo "Script completed! Your SN is partly set up, but still needs to be activated"
+  echo "to be used in the suggested hot/cold setup. You will need to complete these steps"
+  echo "on your home computer:"
+  
+  echo "1. Download the id_ed25519.pem file from the remote server to your home computer."
+  echo "2. Download the pastelup tool for your OS from https://github.com/pastelnetwork/pastelup/releases/tag/v1.2.1-beta5"
+  
+  IP_ADDRESS=$(curl ipinfo.io/ip)
+  SSH_USER="ubuntu"
+  
+  echo "3. Install the SuperNode remotely using the following command:"
+  echo "./pastelup install supernode remote -r beta -n testnet --ssh-ip $IP_ADDRESS --ssh-user $SSH_USER --ssh-key <PATH_TO_SSH_PRIVATE_KEY_FILE>"
+  
+  echo "4. Initialize the SuperNode with a cold/hot setup using the following command:"
+  echo "./pastelup init supernode coldhot --new --name <SN_name> --ssh-ip $IP_ADDRESS --ssh-user $SSH_USER --ssh-key <PATH_TO_SSH_PRIVATE_KEY_FILE>"
+  
+  echo "5. Start the masternode with the following command:"
+  echo "./pastel-cli masternode start-alias <SN_name>"
+  
+  echo "6. Check the masternode status and list your PastelID on the hot node:"
+  echo "./pastel/pastel-cli masternode status"
+  echo "./pastel/pastel-cli pastelid list mine"
+  echo "Remember the PastelID returned by the last command."
+  
+  echo "7. Check your balance and generate a new address:"
+  echo "./pastel/pastel-cli getbalance"
+  echo "./pastel/pastel-cli getnewaddress"
+  echo "Remember the address returned by the last command."
+  
+  echo "8. Send coins to the address from step 7."
+  
+  echo "9. Register the masternode with the following command:"
+  echo "./pastel/pastel-cli tickets register mnid <PastelID_returned_in_step_6> <PastelID_Passphrase> <Address_generated_in_step_7>"
+  
+  echo "10. Check the masternode status again:"
+  echo "./pastel/pastel-cli masternode status"
 }
 
 function main() {
