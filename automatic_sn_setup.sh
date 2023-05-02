@@ -132,6 +132,12 @@ function create_directory_for_playbook() {
 
 function clone_playbook_repository() {
   echo "Cloning the playbook repository..."
+  # Remove the existing directory if it exists and is not empty
+  if [ -d "$playbook_dir" ]; then
+    rm -rf "$playbook_dir"
+  fi
+  # Create the directory for the Ansible playbook
+  sudo -u ubuntu mkdir -p "$playbook_dir"
   git clone "${PASTEL_REPO}/${PLAYBOOK_REPO}" "$playbook_dir"
 }
 
