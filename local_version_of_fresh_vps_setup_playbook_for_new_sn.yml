@@ -68,6 +68,7 @@
         curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | sudo dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg \
         && sudo chmod go+r /usr/share/keyrings/githubcli-archive-keyring.gpg \
         && echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null \
+      warn: false
 
     - name: Add the Google Chrome repository
       apt_repository:
@@ -180,7 +181,7 @@
       become: yes
       become_user: ubuntu
       file:
-        path: ~/.local/bin
+        path: /home/ubuntu/.local/bin
         state: directory
 
     - name: Remove existing .tmux folder
@@ -322,7 +323,7 @@
       when: pasteld_search_result.matched == 0
       become: yes
       become_user: ubuntu
-      command: '/home/ubuntu/pastelup install supernode -f -r latest -n testnet --log-file ~/pastelup.log --log-level debug'
+      command: '/home/ubuntu/pastelup install supernode -f -r latest -n testnet --log-file /home/ubuntu/pastelup.log --log-level debug'
       register: pastelup_install_output
 
     - debug:
