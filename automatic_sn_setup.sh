@@ -170,7 +170,7 @@ function verify_ansible_playbook_completion() {
 
 function install_additional_rust_based_utilities() {
   echo "Installing additional Rust-based utilities (lsd, du-dust, bat, ripgrep, exa, tokei, hyperfine)..."
-  sudo -u ubuntu bash -c 'cargo install lsd du-dust bat ripgrep exa tokei hyperfine'
+  sudo -u ubuntu zsh -c 'source /home/ubuntu/.zshrc; cargo install lsd du-dust bat ripgrep exa tokei hyperfine'
   echo "Rust-based utilities installed successfully."
   echo -e $SECTION_DIVIDER
 }
