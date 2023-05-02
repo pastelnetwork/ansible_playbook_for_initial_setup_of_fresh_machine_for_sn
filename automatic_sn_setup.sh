@@ -27,15 +27,15 @@ function check_and_install_dependencies() {
   fi
 }
 
-# Prompt for confirmation
 function prompt_for_confirmation() {
   echo "This script automates the setup and configuration of a Pastel Supernode (SN)"
   echo "on a fresh Ubuntu 22.04 server with a static IP. Please review the script's"
   echo "assumptions and prerequisites before proceeding."
-  echo "Press any key to continue, or press Ctrl+C to abort."
-  read -r -n 1 -s
+  echo "Press CTRL+C to abort at any time."
+  sleep 3  # Wait for 3 seconds before proceeding
   echo -e $SECTION_DIVIDER
 }
+
 
 # Create setup progress file
 function create_setup_progress_file() {
