@@ -75,7 +75,8 @@ inventory_file="$temp_dir/inventory.ini"
 echo "localhost ansible_connection=local" > "$inventory_file"
 
 # Step 11: Run the Ansible playbook on the local machine
-echo "Running the Ansible playbook on the local machine..."
+echo "Switching to the ubuntu user and then running the Ansible playbook on the local machine..."
+sudo su - ubuntu
 ansible-playbook -i "$inventory_file" "$temp_dir/local_version_of_fresh_vps_setup_playbook_for_new_sn.yml"
 echo "Ansible playbook completed."
 
