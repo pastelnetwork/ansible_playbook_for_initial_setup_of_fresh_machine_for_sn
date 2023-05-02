@@ -186,7 +186,7 @@ function display_final_instructions() {
   echo "to be used in the suggested hot/cold setup. You will need to complete these steps"
   echo "on your home computer:"
   
-  echo "1. Download the id_ed25519.pem file from the remote server to your home computer."
+  echo "1. Download the /home/ubuntu/.ssh/id_ed25519.pem file from the remote server to your home computer."
   echo "2. Download the pastelup tool for your OS from https://github.com/pastelnetwork/pastelup/releases/tag/v1.2.1-beta5"
   
   IP_ADDRESS=$(curl ipinfo.io/ip)
@@ -195,13 +195,13 @@ function display_final_instructions() {
   echo "3. Install the SuperNode remotely using the following command:"
   echo "./pastelup install supernode remote -r beta -n testnet --ssh-ip $IP_ADDRESS --ssh-user $SSH_USER --ssh-key <PATH_TO_SSH_PRIVATE_KEY_FILE>"
   
-  echo "4. Initialize the SuperNode with a cold/hot setup using the following command:"
+  echo "4. Initialize the SuperNode with a cold/hot setup using the following command ('SN_name' can be something like 'My_SN_01'):"
   echo "./pastelup init supernode coldhot --new --name <SN_name> --ssh-ip $IP_ADDRESS --ssh-user $SSH_USER --ssh-key <PATH_TO_SSH_PRIVATE_KEY_FILE>"
   
   echo "5. Start the masternode with the following command:"
   echo "./pastel-cli masternode start-alias <SN_name>"
   
-  echo "6. Check the masternode status and list your PastelID on the hot node:"
+  echo "6. Check the masternode status and list your PastelID on the remote machine:"
   echo "./pastel/pastel-cli masternode status"
   echo "./pastel/pastel-cli pastelid list mine"
   echo "Remember the PastelID returned by the last command."
