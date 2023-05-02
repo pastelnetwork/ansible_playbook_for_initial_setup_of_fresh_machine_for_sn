@@ -56,8 +56,6 @@ function generate_secure_password() {
     echo "Generated password: $password"
     echo "Please store this password securely in a password manager or other secure method."
     echo -e $SECTION_DIVIDER
-    echo -n 'Press [Enter] key when you have stored the password...'
-    read -r _
     update_progress "step1_completed"
   fi
 }
