@@ -32,11 +32,9 @@ function prompt_for_confirmation() {
   echo "This script automates the setup and configuration of a Pastel Supernode (SN)"
   echo "on a fresh Ubuntu 22.04 server with a static IP. Please review the script's"
   echo "assumptions and prerequisites before proceeding."
-  read -p "Do you want to proceed? (y/n): " response
-  if [[ ! $response =~ ^([yY][eE][sS]|[yY])$ ]]; then
-    echo "Aborted."
-    exit 1
-  fi
+  echo "Press any key to continue, or press Ctrl+C to abort."
+  read -r -n 1 -s
+  echo -e $SECTION_DIVIDER
 }
 
 # Create setup progress file
@@ -126,8 +124,8 @@ function grant_passwordless_sudo_access() {
 
 function update_package_cache_and_install_required_packages() {
   echo "Updating package cache and installing required packages (Ansible and Git)..."
-  sudo apt-get update
-  sudo apt-get install -y ansible git
+  sudo apt-get update >/dev/null 2>&1
+  sudo apt-get install -y ansible git >/dev/null 2>&1
   echo -e $SECTION_DIVIDER
 }
 
