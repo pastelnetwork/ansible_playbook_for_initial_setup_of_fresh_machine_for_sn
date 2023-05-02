@@ -36,38 +36,34 @@ function prompt_for_confirmation() {
   echo -e $SECTION_DIVIDER
 }
 
-
-# Create setup progress file
 function create_setup_progress_file() {
-  if [ ! -f /home/ubuntu/setup_progress.txt ]; then
-    sudo -u ubuntu touch /home/ubuntu/setup_progress.txt
+  if [ ! -f /root/setup_progress.txt ]; then
+    touch /root/setup_progress.txt
   fi
 }
 
 # Update progress function
 function update_progress() {
-  sudo -u ubuntu bash -c "echo $1 >> /home/ubuntu/setup_progress.txt"
+  sudo -u ubuntu bash -c "echo $1 >> /root/setup_progress.txt"
 }
 
 function generate_secure_password() {
-  if ! grep -q "step1_completed" /home/ubuntu/setup_progress.txt; then
+  if ! grep -q "step1_completed" /root/setup_progress.txt; then
     echo "Generating a secure password for the 'ubuntu' user..."
-    password=$(openssl rand -base64 30 | tr -dc 'a-zA-Z0-9!@#$%^&*()_+?><:;,' | head -c 40)
-
+    password=$(openssl rand -base64 30 | tr -dc 'a-zA-Z0-9!@#$%^&*()_+?><:;,.' | head -c 40)
     echo ""
     echo "Generated password: $password"
     echo "Please store this password securely in a password manager or other secure method."
     echo -e $SECTION_DIVIDER
     echo -n 'Press [Enter] key when you have stored the password...'
     read -r _
-
     update_progress "step1_completed"
   fi
 }
 
 # Create the 'ubuntu' user with the generated password and add to the sudo group
 function create_ubuntu_user() {
-  if ! grep -q "step2_completed" /home/ubuntu/setup_progress.txt; then
+  if ! grep -q "step2_completed" /root/setup_progress.txt; then
     if ! id -u ubuntu >/dev/null 2>&1; then
       echo "Creating the 'ubuntu' user and adding to the sudo group..."
       sudo adduser --gecos "" --disabled-password ubuntu
@@ -77,14 +73,13 @@ function create_ubuntu_user() {
     else
       echo "The 'ubuntu' user already exists."
     fi
-
     update_progress "step2_completed"
   fi
 }
 
 # Generate an ed25519 SSH key for the 'ubuntu' user
 function generate_ssh_key() {
-  if ! grep -q "step3_completed" /home/ubuntu/setup_progress.txt; then
+  if ! grep -q "step3_completed" /root/setup_progress.txt; then
     if [ ! -f /home/ubuntu/.ssh/id_ed25519 ]; then
       echo "Generating an ed25519 SSH key for the 'ubuntu' user..."
       sudo -u ubuntu mkdir -p /home/ubuntu/.ssh
@@ -146,11 +141,10 @@ function create_temp_inventory_file() {
 }
 
 function run_ansible_playbook() {
-  if ! grep -q "step9_completed" /home/ubuntu/setup_progress.txt; then
+  if ! grep -q "step9_completed" /root/setup_progress.txt; then
     echo "Switching to the ubuntu user and then running the Ansible playbook on the local machine..."
-    sudo su - ubuntu -c "ansible-playbook -i \"$ansible_inventory_file\" \"$playbook_temp_dir/$PLAYBOOK_NAME\""
+    sudo su - ubuntu -c "(ansible-playbook -i \"$ansible_inventory_file\" \"$playbook_temp_dir/$PLAYBOOK_NAME\" && echo \"step9_completed\" >> /root/setup_progress.txt)"
     echo "Ansible playbook completed."
-    update_progress "step9_completed"
   else
     echo "Ansible playbook has already been run successfully."
   fi
