@@ -333,7 +333,7 @@
       when: pasteld_search_result.matched == 0
       become: yes
       become_user: ubuntu
-      command: '/home/ubuntu/pastelup install supernode -f -r latest -n testnet --log-file /home/ubuntu/pastelup.log --log-level debug'
+      command: '/home/ubuntu/pastelup install supernode -f -r beta -n mainnet -p=18.118.218.206,18.116.26.219 --log-file /home/ubuntu/pastelup.log --log-level debug'
       register: pastelup_install_output
 
     - debug:
@@ -366,3 +366,12 @@
           experimentalfeatures=1
           insightexplorer=1
           zmergetoaddress=1        
+
+    - name: Run pastelup start command
+      become: yes
+      become_user: ubuntu
+      command: '/home/ubuntu/pastelup start supernode --log-file /home/ubuntu/pastelup.log --log-level debug'
+      register: pastelup_start_output
+
+    - debug:
+        var: pastelup_start_output.stdout_lines      
