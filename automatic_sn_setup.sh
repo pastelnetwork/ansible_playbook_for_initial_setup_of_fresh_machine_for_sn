@@ -44,7 +44,7 @@ function create_setup_progress_file() {
 
 # Update progress function
 function update_progress() {
-  sudo -u ubuntu bash -c "echo $1 >> /root/setup_progress.txt"
+  echo "$1" >> /root/setup_progress.txt
 }
 
 function generate_secure_password() {
