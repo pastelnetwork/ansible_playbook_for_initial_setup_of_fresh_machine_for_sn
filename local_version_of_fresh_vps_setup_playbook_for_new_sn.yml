@@ -92,6 +92,7 @@
           - libboost-all-dev 
           - libssl-dev
           - make
+          - multitail
           - nano
           - nginx
           - nodejs
