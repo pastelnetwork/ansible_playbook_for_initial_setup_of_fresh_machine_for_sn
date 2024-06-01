@@ -17,11 +17,9 @@ plugins=(git python vscode tmux systemd rsync ripgrep pip tmuxinator direnv zsh-
 source $ZSH/oh-my-zsh.sh
 export MANPATH="/usr/local/man:$MANPATH"
 export PATH="/home/ubuntu/.local/bin:$PATH"
-eval "$(mcfly init zsh)"
 alias ls='lsd --inode --long'
 alias cat='bat'
 alias du='dust'
-alias python3='python3.9'
 [ -s "$HOME/.config/envman/load.sh" ] && source "$HOME/.config/envman/load.sh"
 source /home/ubuntu/powerlevel10k/powerlevel10k.zsh-theme
 export PATH="$HOME/.cargo/bin:$PATH"
