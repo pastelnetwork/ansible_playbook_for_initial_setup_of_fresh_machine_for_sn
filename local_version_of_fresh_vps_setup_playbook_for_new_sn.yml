@@ -4,13 +4,42 @@
   vars:
     created_username: ubuntu
     ansible_ssh_wait_timeout: 300
+    oh_my_zsh_install_script: "https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh"
+    rust_install_script: "https://sh.rustup.rs"
+    atuin_install_script: "https://setup.atuin.sh"
+    home_dir: "/home/{{ created_username }}"
+    zshrc_path: "{{ home_dir }}/.zshrc"
+    oh_my_zsh_install_flag: "{{ home_dir }}/.oh-my-zsh"
 
   tasks:
-    - name: Install aptitude
+    - name: Install aptitude and required packages
       apt:
-        name: aptitude
+        name:
+          - aptitude
+          - automake
+          - build-essential
+          - certbot
+          - cmake
+          - direnv
+          - fail2ban
+          - ffmpeg
+          - fonts-powerline
+          - libboost-all-dev
+          - logcheck
+          - logrotate
+          - logwatch
+          - p7zip-full
+          - python3-certbot-nginx
+          - ripgrep
         state: latest
         update_cache: true
+        autoremove: yes
+
+    - name: Update and upgrade apt packages
+      ansible.builtin.apt:
+        update_cache: yes
+        upgrade: dist
+        autoremove: yes
 
     - name: Setup passwordless sudo for the created user
       lineinfile:
@@ -24,62 +53,33 @@
       ansible.posix.authorized_key:
         user: "{{ created_username }}"
         state: present
-        key: "{{ lookup('file', lookup('env','HOME') + '/.ssh/id_ed25519.pub') }}"
-
-    - name: Update apt and install packages that are not available in Ubuntu 22.10
-      become: yes
-      apt:
-        pkg:
-          - automake
-          - build-essential
-          - certbot
-          - cmake
-          - direnv
-          - fail2ban
-          - ffmpeg
-          - fonts-powerline
-          - libboost-all-dev 
-          - logcheck
-          - logrotate
-          - logwatch
-          - p7zip-full
-          - python3-certbot-nginx
-          - ripgrep
-        state: latest
-        update_cache: true
-        autoremove: yes
-
-    - name: Remove dependencies that are no longer required.
-      apt:
-        autoremove: yes
+        key: "{{ lookup('file', lookup('env', 'HOME') + '/.ssh/id_ed25519.pub') }}"
 
     - name: Add Google official GPG key
       apt_key:
         url: https://packages.cloud.google.com/apt/doc/apt-key.gpg
         state: present
 
-    - name: Add Google chrome signing key
+    - name: Add Google Chrome signing key
       apt_key:
         url: https://dl.google.com/linux/linux_signing_key.pub
-        state: present        
+        state: present
 
     - name: Add Github signing key and apt repository
       shell: |
         curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | sudo dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg \
         && sudo chmod go+r /usr/share/keyrings/githubcli-archive-keyring.gpg \
-        && echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null \
+        && echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null
 
     - name: Add the Google Chrome repository
       apt_repository:
         repo: deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main
         state: present
 
-    - name: Update apt and install required system packages
-      become: yes
+    - name: Install additional system packages
       apt:
-        pkg:
+        name:
           - curl
-          - ffmpeg
           - gcc
           - g++
           - gdb
@@ -89,7 +89,6 @@
           - golang-go
           - google-chrome-stable
           - htop
-          - libboost-all-dev 
           - libssl-dev
           - make
           - multitail
@@ -112,148 +111,253 @@
           - vpnc
           - zip
           - zlib1g-dev
-          - zsh          
+          - zsh
           - zstd
         state: latest
         update_cache: true
         autoremove: yes
 
     - name: Install oh-my-zsh
-      become: yes
-      become_user: ubuntu
       git:
         repo: https://github.com/robbyrussell/oh-my-zsh
-        dest: /home/ubuntu/.oh-my-zsh 
+        dest: "{{ oh_my_zsh_install_flag }}"
         force: yes
+      become_user: "{{ created_username }}"
 
-    - name: Ensure the user 'ubuntu' has a zsh shell.
+    - name: Ensure the user has a zsh shell
       user:
-        name: ubuntu
+        name: "{{ created_username }}"
         shell: /bin/zsh
         state: present
-      become: yes
 
-    - name: Create directory .local/bin directory
-      become: yes
-      become_user: ubuntu
+    - name: Create .local/bin directory
       file:
-        path: /home/ubuntu/.local/bin
+        path: "{{ home_dir }}/.local/bin"
         state: directory
-
-    - name: Remove existing .tmux folder
-      become: yes
-      become_user: ubuntu
-      file: 
-        path: /home/ubuntu/.tmux
-        state: absent
-
-    - name: Remove existing tmux configurations
-      become: yes
-      become_user: ubuntu
-      file: 
-        path: "{{ item }}"
-        state: absent
-      with_items:
-        - /home/ubuntu/.tmux.conf
-        - /home/ubuntu/.tmux.conf.local
-        - /home/ubuntu/.tmux/.tmux.conf
-        - /home/ubuntu/.tmux/.tmux.conf.local
+      become_user: "{{ created_username }}"
 
     - name: Install custom tmux configuration
-      become: yes
-      become_user: ubuntu
       git:
         repo: https://github.com/gpakosz/.tmux.git
-        dest: /home/ubuntu/.tmux/
+        dest: "{{ home_dir }}/.tmux"
+        force: yes
+      become_user: "{{ created_username }}"
 
     - name: Set up custom tmux configuration
-      become: yes
-      become_user: ubuntu
       shell: |
-        cd /home/ubuntu/
+        cd {{ home_dir }}
         ln -s -f .tmux/.tmux.conf
         cp .tmux/.tmux.conf.local .
+      become_user: "{{ created_username }}"
 
-    - name: Set up further tmux customizations
-      become: yes
-      become_user: ubuntu
+    - name: Further tmux customizations
       blockinfile:
-        path: "/home/ubuntu/.tmux.conf.local"
+        path: "{{ home_dir }}/.tmux.conf.local"
         insertafter: "# EOF"
         block: |
           set-option -g default-shell $SHELL
           set -g mouse on
           set-option -g history-limit 25000
           set -g @plugin 'tmux-plugins/tmux-resurrect'
+      become_user: "{{ created_username }}"
 
     - name: Install powerlevel10k zsh theme
-      become: yes
-      become_user: ubuntu
       git:
-        repo: https://github.com/romkatv/powerlevel10k.git 
-        dest: /home/ubuntu/powerlevel10k
+        repo: https://github.com/romkatv/powerlevel10k.git
+        dest: "{{ home_dir }}/powerlevel10k"
         depth: 1
+      become_user: "{{ created_username }}"
 
     - name: Install zsh-autosuggestions plugin
-      become: yes
-      become_user: ubuntu
       git:
         repo: https://github.com/zsh-users/zsh-autosuggestions
-        dest: /home/ubuntu/.oh-my-zsh/custom/plugins/zsh-autosuggestions
+        dest: "{{ home_dir }}/.oh-my-zsh/custom/plugins/zsh-autosuggestions"
         depth: 1
+      become_user: "{{ created_username }}"
 
-    - name: Install mcfly
-      shell: |
-        rm -f /usr/local/bin/mcfly
-        curl -LSfs https://raw.githubusercontent.com/cantino/mcfly/master/ci/install.sh | sh -s -- --git cantino/mcfly
-      become: yes
-      register: mcfly_output
+    - name: Install Atuin
+      shell: /bin/bash -c "$(curl --proto '=https' --tlsv1.2 -sSf {{ atuin_install_script }})"
+      become_user: "{{ created_username }}"
 
-    - debug:
-        var: mcfly_output.stdout_lines
+    - name: Ensure Atuin environment is loaded
+      lineinfile:
+        path: "{{ zshrc_path }}"
+        regexp: 'eval "$(atuin init zsh)"'
+        line: 'eval "$(atuin init zsh)"'
+        state: present
+      become_user: "{{ created_username }}"
 
     - name: Install tmux plugin manager
-      become: yes
-      become_user: ubuntu
       git:
         repo: https://github.com/tmux-plugins/tpm.git
-        dest: /home/ubuntu/.tmux/plugins/tpm
+        dest: "{{ home_dir }}/.tmux/plugins/tpm"
+      become_user: "{{ created_username }}"
 
     - name: Install Rust
-      become: yes
-      become_user: ubuntu
       shell: curl https://sh.rustup.rs -sSf | sh -s -- -y
       register: install_rust_output
+      become_user: "{{ created_username }}"
 
-    - debug:
-        var: install_rust_output.stdout_lines
+    - name: Ensure Rust environment is loaded
+      lineinfile:
+        path: "{{ zshrc_path }}"
+        regexp: 'source $HOME/.cargo/env'
+        line: 'source $HOME/.cargo/env'
+        state: present
+      become_user: "{{ created_username }}"
 
-    - name: Download the zshrc file from GitHub and save it to the user's home directory
-      ansible.builtin.get_url:
+    - name: Download zshrc file
+      get_url:
         url: https://raw.githubusercontent.com/pastelnetwork/ansible_playbook_for_initial_setup_of_fresh_machine_for_sn/master/zshrc
-        dest: /home/ubuntu/.zshrc
-        owner: ubuntu
-        group: ubuntu
+        dest: "{{ zshrc_path }}"
+        owner: "{{ created_username }}"
+        group: "{{ created_username }}"
         mode: '0644'
         backup: yes
-      become: yes
-      become_user: ubuntu
+      become_user: "{{ created_username }}"
 
-    - name: source the .zshrc file
-      become: yes
-      become_user: ubuntu
-      command: zsh -lc "source /home/ubuntu/.zshrc"
+    - name: Source the .zshrc file
+      command: zsh -lc "source {{ zshrc_path }}"
       register: source_zshrc_file_output
+      become_user: "{{ created_username }}"
 
-    - debug:
-        var: source_zshrc_file_output.stdout_lines    
-
-    - name: Download the p10k settings file from GitHub and save it to the user's home directory
-      ansible.builtin.get_url:
+    - name: Download p10k settings file
+      get_url:
         url: https://raw.githubusercontent.com/pastelnetwork/ansible_playbook_for_initial_setup_of_fresh_machine_for_sn/master/p10k.zsh
-        dest: /home/ubuntu/.p10k.zsh
-        owner: ubuntu
-        group: ubuntu
+        dest: "{{ home_dir }}/.p10k.zsh"
+        owner: "{{ created_username }}"
+        group: "{{ created_username }}"
         mode: '0644'
-      become: yes
-      become_user: ubuntu
+      become_user: "{{ created_username }}"
+
+    - name: Install dependencies for pyenv
+      apt:
+        name:
+          - libbz2-dev
+          - libreadline-dev
+          - libsqlite3-dev
+          - wget
+          - llvm
+          - libncurses5-dev
+          - libncursesw5-dev
+          - xz-utils
+          - tk-dev
+          - libffi-dev
+          - liblzma-dev
+          - python3-openssl
+        state: present
+        update_cache: yes
+
+    - name: Clone pyenv repository
+      git:
+        repo: 'https://github.com/pyenv/pyenv.git'
+        dest: '{{ home_dir }}/.pyenv'
+        update: yes
+        force: yes
+      become_user: "{{ created_username }}"
+
+    - name: Check if zsh is installed
+      command: which zsh
+      register: zsh_installed
+      ignore_errors: yes
+
+    - name: Set pyenv environment variables in .zshrc if zsh is found
+      blockinfile:
+        path: '{{ zshrc_path }}'
+        block: |
+          export PYENV_ROOT="$HOME/.pyenv"
+          export PATH="$PYENV_ROOT/bin:$PATH"
+          eval "$(pyenv init --path)"
+      when: zsh_installed.rc == 0
+
+    - name: Set pyenv environment variables in .bashrc if zsh is not found
+      blockinfile:
+        path: '{{ home_dir }}/.bashrc'
+        block: |
+          export PYENV_ROOT="$HOME/.pyenv"
+          export PATH="$PYENV_ROOT/bin:$PATH"
+          eval "$(pyenv init --path)"
+      when: zsh_installed.rc != 0
+
+    - name: Ensure pyenv is initialized in zsh
+      shell: |
+        export PYENV_ROOT="$HOME/.pyenv"
+        export PATH="$PYENV_ROOT/bin:$PATH"
+        eval "$(pyenv init --path)"
+        pyenv --version
+      args:
+        executable: /bin/zsh
+      register: pyenv_version_zsh
+      changed_when: "'pyenv' not in pyenv_version_zsh.stdout"
+      when: zsh_installed.rc == 0
+
+    - name: Ensure pyenv is initialized in bash
+      shell: |
+        export PYENV_ROOT="$HOME/.pyenv"
+        export PATH="$PYENV_ROOT/bin/$PATH"
+        eval "$(pyenv init --path)"
+        pyenv --version
+      args:
+        executable: /bin/bash
+      register: pyenv_version_bash
+      changed_when: "'pyenv' not in pyenv_version_bash.stdout"
+      when: zsh_installed.rc != 0
+
+    - name: Install Python 3.12 using pyenv in zsh
+      shell: |
+        export PYENV_ROOT="$HOME/.pyenv"
+        export PATH="$PYENV_ROOT/bin:$PATH"
+        eval "$(pyenv init --path)"
+        pyenv install -s 3.12
+      args:
+        executable: /bin/zsh
+      when: zsh_installed.rc == 0
+
+    - name: Install Python 3.12 using pyenv in bash
+      shell: |
+        export PYENV_ROOT="$HOME/.pyenv"
+        export PATH="$PYENV_ROOT/bin:$PATH"
+        eval "$(pyenv init --path)"
+        pyenv install -s 3.12
+      args:
+        executable: /bin/bash
+      when: zsh_installed.rc != 0
+
+    - name: Ensure curl is installed
+      package:
+        name: curl
+        state: present
+
+    - name: Download and install NVM
+      command: curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
+      args:
+        creates: "{{ home_dir }}/.nvm/nvm.sh"
+      environment:
+        HOME: "{{ home_dir }}"
+      become_user: "{{ created_username }}"
+
+    - name: Source NVM script and install Node.js 20.1
+      shell: |
+        . {{ home_dir }}/.nvm/nvm.sh
+        nvm install 20.1
+        nvm use 20.1
+        nvm alias default 20.1
+      args:
+        executable: /bin/bash
+      environment:
+        HOME: "{{ home_dir }}"
+      become_user: "{{ created_username }}"
+
+    - name: Ensure Node.js is available in future shell sessions
+      lineinfile:
+        path: "{{ home_dir }}/.bashrc"
+        line: 'export NVM_DIR="$HOME/.nvm" && . "$NVM_DIR/nvm.sh"'
+        state: present
+      become_user: "{{ created_username }}"
+
+    - name: Source NVM in .profile for login shells
+      lineinfile:
+        path: "{{ home_dir }}/.profile"
+        line: 'export NVM_DIR="$HOME/.nvm" && . "$NVM_DIR/nvm.sh"'
+        state: present
+      become_user: "{{ created_username }}"
