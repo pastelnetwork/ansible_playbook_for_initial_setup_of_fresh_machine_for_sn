@@ -99,6 +99,7 @@
           - openssh-client
           - openssh-server
           - openssl
+          - pipx
           - rsync
           - software-properties-common
           - tmux
@@ -117,6 +118,14 @@
         update_cache: true
         autoremove: yes
 
+    - name: Run pipx ensurepath for the user
+      shell: "pipx ensurepath"
+      become: no
+    
+    - name: Run sudo pipx ensurepath with --global
+      shell: "sudo pipx ensurepath --global"
+      become: yes
+      
     - name: Install oh-my-zsh
       git:
         repo: https://github.com/robbyrussell/oh-my-zsh
