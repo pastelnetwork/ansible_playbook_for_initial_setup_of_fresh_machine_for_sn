@@ -118,13 +118,18 @@
         update_cache: true
         autoremove: yes
 
-    - name: Run pipx ensurepath for the user
+    - name: Check if pipx path is already in PATH
       shell: "pipx ensurepath"
       become: no
-    
-    - name: Run sudo pipx ensurepath with --global
-      shell: "sudo pipx ensurepath --global"
-      become: yes
+      register: pipx_path_check
+      changed_when: "'All pipx binary directories have been added to PATH' not in pipx_path_check.stdout"
+      ignore_errors: yes
+
+    - name: Run pipx ensurepath with --force if required
+      shell: "pipx ensurepath --force"
+      become: no
+      when: "'All pipx binary directories have been added to PATH' in pipx_path_check.stdout"
+      ignore_errors: yes
       
     - name: Install oh-my-zsh
       git:
