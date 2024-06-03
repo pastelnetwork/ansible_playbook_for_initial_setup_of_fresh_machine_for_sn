@@ -34,17 +34,17 @@
         state: latest
         update_cache: true
         autoremove: yes
-        dpkg_options: '--force-confdef, --force-confold, --allow-change-held-packages'
+        dpkg_options: '--force-confdef --force-confold --allow-change-held-packages'
       ignore_errors: yes
-        
+
     - name: Update and upgrade apt packages
       ansible.builtin.apt:
         update_cache: yes
         upgrade: dist
         autoremove: yes
-        dpkg_options: '--force-confdef, --force-confold, --allow-change-held-packages'
+        dpkg_options: '--force-confdef --force-confold --allow-change-held-packages'
       ignore_errors: yes
-        
+
     - name: Setup passwordless sudo for the created user
       lineinfile:
         path: "/etc/sudoers.d/{{ created_username }}"
@@ -52,33 +52,39 @@
         line: "{{ created_username }} ALL=(ALL) NOPASSWD: ALL"
         create: true
         validate: '/usr/sbin/visudo -cf %s'
+      ignore_errors: yes
 
     - name: Set authorized key for the created user
       ansible.posix.authorized_key:
         user: "{{ created_username }}"
         state: present
         key: "{{ lookup('file', lookup('env', 'HOME') + '/.ssh/id_ed25519.pub') }}"
+      ignore_errors: yes
 
     - name: Add Google official GPG key
       apt_key:
         url: https://packages.cloud.google.com/apt/doc/apt-key.gpg
         state: present
+      ignore_errors: yes
 
     - name: Add Google Chrome signing key
       apt_key:
         url: https://dl.google.com/linux/linux_signing_key.pub
         state: present
+      ignore_errors: yes
 
     - name: Add Github signing key and apt repository
       shell: |
         curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | sudo dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg \
         && sudo chmod go+r /usr/share/keyrings/githubcli-archive-keyring.gpg \
         && echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null
+      ignore_errors: yes
 
     - name: Add the Google Chrome repository
       apt_repository:
         repo: deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main
         state: present
+      ignore_errors: yes
 
     - name: Install additional system packages
       apt:
@@ -121,7 +127,7 @@
         state: latest
         update_cache: true
         autoremove: yes
-        dpkg_options: '--force-confdef, --force-confold, --allow-change-held-packages'
+        dpkg_options: '--force-confdef --force-confold --allow-change-held-packages'
       ignore_errors: yes
 
     - name: Check if pipx path is already in PATH
@@ -136,25 +142,28 @@
       become: no
       when: "'All pipx binary directories have been added to PATH' in pipx_path_check.stdout"
       ignore_errors: yes
-      
+
     - name: Install oh-my-zsh
       git:
         repo: https://github.com/robbyrussell/oh-my-zsh
         dest: "{{ oh_my_zsh_install_flag }}"
         force: yes
       become_user: "{{ created_username }}"
+      ignore_errors: yes
 
     - name: Ensure the user has a zsh shell
       user:
         name: "{{ created_username }}"
         shell: /bin/zsh
         state: present
+      ignore_errors: yes
 
     - name: Create .local/bin directory
       file:
         path: "{{ home_dir }}/.local/bin"
         state: directory
       become_user: "{{ created_username }}"
+      ignore_errors: yes
 
     - name: Install custom tmux configuration
       git:
@@ -162,6 +171,7 @@
         dest: "{{ home_dir }}/.tmux"
         force: yes
       become_user: "{{ created_username }}"
+      ignore_errors: yes
 
     - name: Set up custom tmux configuration
       shell: |
@@ -169,6 +179,7 @@
         ln -s -f .tmux/.tmux.conf
         cp .tmux/.tmux.conf.local .
       become_user: "{{ created_username }}"
+      ignore_errors: yes
 
     - name: Further tmux customizations
       blockinfile:
@@ -180,6 +191,7 @@
           set-option -g history-limit 25000
           set -g @plugin 'tmux-plugins/tmux-resurrect'
       become_user: "{{ created_username }}"
+      ignore_errors: yes
 
     - name: Install powerlevel10k zsh theme
       git:
@@ -187,6 +199,7 @@
         dest: "{{ home_dir }}/powerlevel10k"
         depth: 1
       become_user: "{{ created_username }}"
+      ignore_errors: yes
 
     - name: Install zsh-autosuggestions plugin
       git:
@@ -194,10 +207,12 @@
         dest: "{{ home_dir }}/.oh-my-zsh/custom/plugins/zsh-autosuggestions"
         depth: 1
       become_user: "{{ created_username }}"
+      ignore_errors: yes
 
     - name: Install Atuin
       shell: /bin/bash -c "$(curl --proto '=https' --tlsv1.2 -sSf {{ atuin_install_script }})"
       become_user: "{{ created_username }}"
+      ignore_errors: yes
 
     - name: Ensure Atuin environment is loaded
       lineinfile:
@@ -206,17 +221,20 @@
         line: 'eval "$(atuin init zsh)"'
         state: present
       become_user: "{{ created_username }}"
+      ignore_errors: yes
 
     - name: Install tmux plugin manager
       git:
         repo: https://github.com/tmux-plugins/tpm.git
         dest: "{{ home_dir }}/.tmux/plugins/tpm"
       become_user: "{{ created_username }}"
+      ignore_errors: yes
 
     - name: Install Rust
       shell: curl https://sh.rustup.rs -sSf | sh -s -- -y
       register: install_rust_output
       become_user: "{{ created_username }}"
+      ignore_errors: yes
 
     - name: Ensure Rust environment is loaded
       lineinfile:
@@ -225,6 +243,7 @@
         line: 'source $HOME/.cargo/env'
         state: present
       become_user: "{{ created_username }}"
+      ignore_errors: yes
 
     - name: Download zshrc file
       get_url:
@@ -235,11 +254,13 @@
         mode: '0644'
         backup: yes
       become_user: "{{ created_username }}"
+      ignore_errors: yes
 
     - name: Source the .zshrc file
       command: zsh -lc "source {{ zshrc_path }}"
       register: source_zshrc_file_output
       become_user: "{{ created_username }}"
+      ignore_errors: yes
 
     - name: Download p10k settings file
       get_url:
@@ -249,6 +270,7 @@
         group: "{{ created_username }}"
         mode: '0644'
       become_user: "{{ created_username }}"
+      ignore_errors: yes
 
     - name: Install dependencies for pyenv
       apt:
@@ -267,6 +289,7 @@
           - python3-openssl
         state: present
         update_cache: yes
+      ignore_errors: yes
 
     - name: Clone pyenv repository
       git:
@@ -275,6 +298,7 @@
         update: yes
         force: yes
       become_user: "{{ created_username }}"
+      ignore_errors: yes
 
     - name: Check if zsh is installed
       command: which zsh
@@ -289,6 +313,7 @@
           export PATH="$PYENV_ROOT/bin:$PATH"
           eval "$(pyenv init --path)"
       when: zsh_installed.rc == 0
+      ignore_errors: yes
 
     - name: Set pyenv environment variables in .bashrc if zsh is not found
       blockinfile:
@@ -298,6 +323,7 @@
           export PATH="$PYENV_ROOT/bin:$PATH"
           eval "$(pyenv init --path)"
       when: zsh_installed.rc != 0
+      ignore_errors: yes
 
     - name: Ensure pyenv is initialized in zsh
       shell: |
@@ -310,6 +336,7 @@
       register: pyenv_version_zsh
       changed_when: "'pyenv' not in pyenv_version_zsh.stdout"
       when: zsh_installed.rc == 0
+      ignore_errors: yes
 
     - name: Ensure pyenv is initialized in bash
       shell: |
@@ -322,6 +349,7 @@
       register: pyenv_version_bash
       changed_when: "'pyenv' not in pyenv_version_bash.stdout"
       when: zsh_installed.rc != 0
+      ignore_errors: yes
 
     - name: Install Python 3.12 using pyenv in zsh
       shell: |
@@ -332,21 +360,24 @@
       args:
         executable: /bin/zsh
       when: zsh_installed.rc == 0
+      ignore_errors: yes
 
     - name: Install Python 3.12 using pyenv in bash
       shell: |
         export PYENV_ROOT="$HOME/.pyenv"
-        export PATH="$PYENV_ROOT/bin:$PATH"
+        export PATH="$PYENV_ROOT/bin/$PATH"
         eval "$(pyenv init --path)"
         pyenv install -s 3.12
       args:
         executable: /bin/bash
       when: zsh_installed.rc != 0
+      ignore_errors: yes
 
     - name: Ensure curl is installed
       package:
         name: curl
         state: present
+      ignore_errors: yes
 
     - name: Download and install NVM
       command: curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
@@ -355,6 +386,7 @@
       environment:
         HOME: "{{ home_dir }}"
       become_user: "{{ created_username }}"
+      ignore_errors: yes
 
     - name: Source NVM script and install Node.js 20.1
       shell: |
@@ -367,6 +399,7 @@
       environment:
         HOME: "{{ home_dir }}"
       become_user: "{{ created_username }}"
+      ignore_errors: yes
 
     - name: Ensure Node.js is available in future shell sessions
       lineinfile:
@@ -374,6 +407,7 @@
         line: 'export NVM_DIR="$HOME/.nvm" && . "$NVM_DIR/nvm.sh"'
         state: present
       become_user: "{{ created_username }}"
+      ignore_errors: yes
 
     - name: Source NVM in .profile for login shells
       lineinfile:
@@ -381,3 +415,4 @@
         line: 'export NVM_DIR="$HOME/.nvm" && . "$NVM_DIR/nvm.sh"'
         state: present
       become_user: "{{ created_username }}"
+      ignore_errors: yes
