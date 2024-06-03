@@ -34,12 +34,14 @@
         state: latest
         update_cache: true
         autoremove: yes
+        dpkg_options: '--force-confdef, --force-confold, --allow-change-held-packages'
 
     - name: Update and upgrade apt packages
       ansible.builtin.apt:
         update_cache: yes
         upgrade: dist
         autoremove: yes
+        dpkg_options: '--force-confdef, --force-confold, --allow-change-held-packages'
 
     - name: Setup passwordless sudo for the created user
       lineinfile:
@@ -117,6 +119,7 @@
         state: latest
         update_cache: true
         autoremove: yes
+        dpkg_options: '--force-confdef, --force-confold, --allow-change-held-packages'
 
     - name: Check if pipx path is already in PATH
       shell: "pipx ensurepath"
