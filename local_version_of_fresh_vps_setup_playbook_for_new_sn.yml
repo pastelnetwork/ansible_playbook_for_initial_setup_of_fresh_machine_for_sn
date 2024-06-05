@@ -4,9 +4,6 @@
   vars:
     created_username: ubuntu
     ansible_ssh_wait_timeout: 300
-    oh_my_zsh_install_script: "https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh"
-    rust_install_script: "https://sh.rustup.rs"
-    atuin_install_script: "https://setup.atuin.sh"
     home_dir: "/home/{{ created_username }}"
     zshrc_path: "{{ home_dir }}/.zshrc"
     oh_my_zsh_install_flag: "{{ home_dir }}/.oh-my-zsh"
@@ -210,7 +207,7 @@
       ignore_errors: yes
 
     - name: Install Atuin
-      shell: /bin/bash -c "$(curl --proto '=https' --tlsv1.2 -sSf {{ atuin_install_script }})"
+      shell: /bin/bash -c "$(curl --proto '=https' --tlsv1.2 -sSf https://setup.atuin.sh)"
       become_user: "{{ created_username }}"
       ignore_errors: yes
 
@@ -254,7 +251,9 @@
         mode: '0644'
         backup: yes
       become_user: "{{ created_username }}"
-      ignore_errors: yes
+      ignore
+
+_errors: yes
 
     - name: Source the .zshrc file
       command: zsh -lc "source {{ zshrc_path }}"
@@ -378,13 +377,32 @@
         name: curl
         state: present
       ignore_errors: yes
-
+      
     - name: Download and install NVM
-      command: curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
+      shell: |
+        export NVM_DIR="$HOME/.nvm"
+        curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
       args:
         creates: "{{ home_dir }}/.nvm/nvm.sh"
       environment:
         HOME: "{{ home_dir }}"
+      become_user: "{{ created_username }}"
+      register: nvm_install
+      ignore_errors: yes
+
+    - name: Ensure Node.js is available in future bash sessions
+      lineinfile:
+        path: "{{ home_dir }}/.bashrc"
+        line: 'export NVM_DIR="$HOME/.nvm" && . "$NVM_DIR/nvm.sh"'
+        state: present
+      become_user: "{{ created_username }}"
+      ignore_errors: yes
+
+    - name: Ensure Node.js is available in future zsh sessions
+      lineinfile:
+        path: "{{ home_dir }}/.zshrc"
+        line: 'export NVM_DIR="$HOME/.nvm" && . "$NVM_DIR/nvm.sh"'
+        state: present
       become_user: "{{ created_username }}"
       ignore_errors: yes
 
@@ -399,14 +417,7 @@
       environment:
         HOME: "{{ home_dir }}"
       become_user: "{{ created_username }}"
-      ignore_errors: yes
-
-    - name: Ensure Node.js is available in future shell sessions
-      lineinfile:
-        path: "{{ home_dir }}/.bashrc"
-        line: 'export NVM_DIR="$HOME/.nvm" && . "$NVM_DIR/nvm.sh"'
-        state: present
-      become_user: "{{ created_username }}"
+      when: nvm_check.stat.exists
       ignore_errors: yes
 
     - name: Source NVM in .profile for login shells
