@@ -253,8 +253,6 @@
       become_user: "{{ created_username }}"
       ignore
 
-_errors: yes
-
     - name: Source the .zshrc file
       command: zsh -lc "source {{ zshrc_path }}"
       register: source_zshrc_file_output
