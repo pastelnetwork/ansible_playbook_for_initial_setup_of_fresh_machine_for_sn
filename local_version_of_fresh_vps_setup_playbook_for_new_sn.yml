@@ -31,7 +31,7 @@
         state: latest
         update_cache: true
         autoremove: yes
-        dpkg_options: '--force-confdef --force-confold --allow-change-held-packages'
+        dpkg_options: ['--force-confdef', '--force-confold', '--allow-change-held-packages']
       ignore_errors: yes
 
     - name: Update and upgrade apt packages
@@ -39,7 +39,7 @@
         update_cache: yes
         upgrade: dist
         autoremove: yes
-        dpkg_options: '--force-confdef --force-confold --allow-change-held-packages'
+        dpkg_options: ['--force-confdef', '--force-confold', '--allow-change-held-packages']
       ignore_errors: yes
 
     - name: Setup passwordless sudo for the created user
@@ -124,7 +124,7 @@
         state: latest
         update_cache: true
         autoremove: yes
-        dpkg_options: '--force-confdef --force-confold --allow-change-held-packages'
+        dpkg_options: ['--force-confdef', '--force-confold', '--allow-change-held-packages']
       ignore_errors: yes
 
     - name: Check if pipx path is already in PATH
@@ -286,6 +286,7 @@
           - python3-openssl
         state: present
         update_cache: yes
+        dpkg_options: ['--force-confdef', '--force-confold', '--allow-change-held-packages']
       ignore_errors: yes
 
     - name: Clone pyenv repository
