@@ -28,6 +28,7 @@
           - p7zip-full
           - python3-certbot-nginx
           - ripgrep
+          - zsh
         state: latest
         update_cache: true
         autoremove: yes
@@ -117,7 +118,6 @@
           - vpnc
           - zip
           - zlib1g-dev
-          - zsh
           - zstd
         state: latest
         update_cache: true
