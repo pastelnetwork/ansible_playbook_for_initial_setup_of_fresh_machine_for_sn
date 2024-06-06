@@ -282,9 +282,7 @@
 
         - name: Install tmux plugin manager
           git:
-            repo: https://github.com/tmux-plugins/t
-
-pm.git
+            repo: https://github.com/tmux-plugins/tpm.git
             dest: "{{ home_dir }}/.tmux/plugins/tpm"
           ignore_errors: yes
 
