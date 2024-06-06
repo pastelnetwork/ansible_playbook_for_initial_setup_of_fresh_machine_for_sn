@@ -8,39 +8,145 @@
     zshrc_path: "{{ home_dir }}/.zshrc"
     oh_my_zsh_install_flag: "{{ home_dir }}/.oh-my-zsh"
 
+
   tasks:
-    - name: Install aptitude and required packages
+    - name: Install aptitude
+      apt:
+        name: aptitude
+        state: latest
+        update_cache: true
+
+    - name: Install required packages using aptitude
       apt:
         name:
-          - aptitude
+          - antiword
           - automake
+          - bat
           - build-essential
           - certbot
+          - clang
           - cmake
+          - cppcheck
+          - curl
           - direnv
+          - docker-compose
+          - docker.io
+          - doxygen
           - fail2ban
           - ffmpeg
+          - flac
           - fonts-powerline
+          - fzf
+          - gcc
+          - g++
+          - gdb
+          - gdisk
+          - gh
+          - git
+          - golang-go
+          - google-chrome-stable
+          - graphviz
+          - htop
+          - jq
+          - kcachegrind
+          - lame
           - libboost-all-dev
+          - libbz2-dev
+          - libeigen3-dev
+          - libffi-dev
+          - libglew-dev
+          - libglm-dev
+          - libglfw3
+          - libglfw3-dev
+          - libjpeg-dev
+          - liblzma-dev
+          - libmad0
+          - libmagic1
+          - libncurses5-dev
+          - libncursesw5-dev
+          - libpq-dev
+          - libreadline-dev
+          - libslack-dev
+          - libsox-fmt-mp3
+          - libsqlite3-dev
+          - libssl-dev
+          - libstdc++-11-dev
+          - libtbb-dev
+          - libvulkan-dev
+          - libxml2-dev
+          - libxmlsec1-dev
+          - llvm
           - logcheck
           - logrotate
           - logwatch
+          - lldb
+          - make
+          - mercurial
+          - multitail
+          - nano
+          - nasm
+          - ncdu
+          - net-tools
+          - nginx
+          - ninja-build
+          - nmap
+          - nodejs
+          - npm
+          - openssh-client
+          - openssh-server
+          - openssl
           - p7zip-full
+          - pipx
+          - pkg-config
+          - poppler-utils
+          - postgresql
           - python3-certbot-nginx
+          - python3-openssl
+          - redis
+          - redis-server
+          - redis-tools
           - ripgrep
+          - rsync
+          - software-properties-common
+          - sox
+          - spirv-tools
+          - sqlite3
+          - subversion
+          - swig
+          - tesseract-ocr
+          - tldr
+          - tk-dev
+          - tmux
+          - traceroute
+          - tree
+          - ubuntu-release-upgrader-core
+          - ubuntu-restricted-extras
+          - ufw
+          - unzip
+          - valgrind
+          - vcsh
+          - vim
+          - vpnc
+          - vulkan-tools
+          - vulkan-validationlayers-dev
+          - wget
+          - xz-utils
+          - yasm
+          - zlib1g-dev
           - zsh
+          - zstd
         state: latest
         update_cache: true
         autoremove: yes
       ignore_errors: yes
 
     - name: Update and upgrade apt packages
-      ansible.builtin.apt:
+      apt:
         update_cache: yes
         upgrade: dist
         autoremove: yes
       ignore_errors: yes
-
+      
     - name: Setup passwordless sudo for the created user
       lineinfile:
         path: "/etc/sudoers.d/{{ created_username }}"
@@ -80,48 +186,6 @@
       apt_repository:
         repo: deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main
         state: present
-      ignore_errors: yes
-
-    - name: Install additional system packages
-      apt:
-        name:
-          - curl
-          - gcc
-          - g++
-          - gdb
-          - gdisk
-          - gh
-          - git
-          - golang-go
-          - google-chrome-stable
-          - htop
-          - libssl-dev
-          - make
-          - multitail
-          - nano
-          - nginx
-          - nodejs
-          - npm
-          - openssh-client
-          - openssh-server
-          - openssl
-          - pipx
-          - rsync
-          - software-properties-common
-          - tmux
-          - ubuntu-release-upgrader-core
-          - ubuntu-restricted-extras
-          - ufw
-          - unzip
-          - vcsh
-          - vim
-          - vpnc
-          - zip
-          - zlib1g-dev
-          - zstd
-        state: latest
-        update_cache: true
-        autoremove: yes
       ignore_errors: yes
 
     - name: Check if pipx path is already in PATH
@@ -271,25 +335,6 @@
         group: "{{ created_username }}"
         mode: '0644'
       become_user: "{{ created_username }}"
-      ignore_errors: yes
-
-    - name: Install dependencies for pyenv
-      apt:
-        name:
-          - libbz2-dev
-          - libreadline-dev
-          - libsqlite3-dev
-          - wget
-          - llvm
-          - libncurses5-dev
-          - libncursesw5-dev
-          - xz-utils
-          - tk-dev
-          - libffi-dev
-          - liblzma-dev
-          - python3-openssl
-        state: present
-        update_cache: yes
       ignore_errors: yes
 
     - name: Clone pyenv repository
