@@ -66,7 +66,6 @@
           - libncursesw5-dev
           - libpq-dev
           - libreadline-dev
-          - libslack-dev
           - libsox-fmt-mp3
           - libsqlite3-dev
           - libssl-dev
