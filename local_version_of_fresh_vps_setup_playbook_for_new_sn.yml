@@ -8,7 +8,6 @@
     zshrc_path: "{{ home_dir }}/.zshrc"
     oh_my_zsh_install_flag: "{{ home_dir }}/.oh-my-zsh"
 
-
   tasks:
     - name: Install aptitude
       apt:
@@ -200,276 +199,251 @@
       when: "'All pipx binary directories have been added to PATH' in pipx_path_check.stdout"
       ignore_errors: yes
 
-    - name: Install oh-my-zsh
-      git:
-        repo: https://github.com/robbyrussell/oh-my-zsh
-        dest: "{{ oh_my_zsh_install_flag }}"
-        force: yes
+    - name: Switch to ubuntu user for remaining tasks
       become_user: "{{ created_username }}"
-      ignore_errors: yes
+      block:
+        - name: Install oh-my-zsh
+          git:
+            repo: https://github.com/robbyrussell/oh-my-zsh
+            dest: "{{ oh_my_zsh_install_flag }}"
+            force: yes
+          ignore_errors: yes
 
-    - name: Ensure zsh is installed
-      apt:
-        name: zsh
-        state: present
-        update_cache: yes
-      ignore_errors: yes
+        - name: Ensure zsh is installed
+          apt:
+            name: zsh
+            state: present
+            update_cache: yes
+          ignore_errors: yes
 
-    - name: Ensure the user has a zsh shell
-      user:
-        name: "{{ created_username }}"
-        shell: /bin/zsh
-        state: present
-      ignore_errors: yes
+        - name: Ensure the user has a zsh shell
+          user:
+            name: "{{ created_username }}"
+            shell: /bin/zsh
+            state: present
+          ignore_errors: yes
 
-    - name: Create .local/bin directory
-      file:
-        path: "{{ home_dir }}/.local/bin"
-        state: directory
-      become_user: "{{ created_username }}"
-      ignore_errors: yes
+        - name: Create .local/bin directory
+          file:
+            path: "{{ home_dir }}/.local/bin"
+            state: directory
+          ignore_errors: yes
 
-    - name: Install custom tmux configuration
-      git:
-        repo: https://github.com/gpakosz/.tmux.git
-        dest: "{{ home_dir }}/.tmux"
-        force: yes
-      become_user: "{{ created_username }}"
-      ignore_errors: yes
+        - name: Install custom tmux configuration
+          git:
+            repo: https://github.com/gpakosz/.tmux.git
+            dest: "{{ home_dir }}/.tmux"
+            force: yes
+          ignore_errors: yes
 
-    - name: Set up custom tmux configuration
-      shell: |
-        cd {{ home_dir }}
-        ln -s -f .tmux/.tmux.conf
-        cp .tmux/.tmux.conf.local .
-      become_user: "{{ created_username }}"
-      ignore_errors: yes
+        - name: Set up custom tmux configuration
+          shell: |
+            cd {{ home_dir }}
+            ln -s -f .tmux/.tmux.conf
+            cp .tmux/.tmux.conf.local .
+          ignore_errors: yes
 
-    - name: Further tmux customizations
-      blockinfile:
-        path: "{{ home_dir }}/.tmux.conf.local"
-        insertafter: "# EOF"
-        block: |
-          set-option -g default-shell $SHELL
-          set -g mouse on
-          set-option -g history-limit 25000
-          set -g @plugin 'tmux-plugins/tmux-resurrect'
-      become_user: "{{ created_username }}"
-      ignore_errors: yes
+        - name: Further tmux customizations
+          blockinfile:
+            path: "{{ home_dir }}/.tmux.conf.local"
+            insertafter: "# EOF"
+            block: |
+              set-option -g default-shell $SHELL
+              set -g mouse on
+              set-option -g history-limit 25000
+              set -g @plugin 'tmux-plugins/tmux-resurrect'
+          ignore_errors: yes
 
-    - name: Install powerlevel10k zsh theme
-      git:
-        repo: https://github.com/romkatv/powerlevel10k.git
-        dest: "{{ home_dir }}/powerlevel10k"
-        depth: 1
-      become_user: "{{ created_username }}"
-      ignore_errors: yes
+        - name: Install powerlevel10k zsh theme
+          git:
+            repo: https://github.com/romkatv/powerlevel10k.git
+            dest: "{{ home_dir }}/powerlevel10k"
+            depth: 1
+          ignore_errors: yes
 
-    - name: Install zsh-autosuggestions plugin
-      git:
-        repo: https://github.com/zsh-users/zsh-autosuggestions
-        dest: "{{ home_dir }}/.oh-my-zsh/custom/plugins/zsh-autosuggestions"
-        depth: 1
-      become_user: "{{ created_username }}"
-      ignore_errors: yes
+        - name: Install zsh-autosuggestions plugin
+          git:
+            repo: https://github.com/zsh-users/zsh-autosuggestions
+            dest: "{{ home_dir }}/.oh-my-zsh/custom/plugins/zsh-autosuggestions"
+            depth: 1
+          ignore_errors: yes
 
-    - name: Install Atuin
-      shell: /bin/bash -c "$(curl --proto '=https' --tlsv1.2 -sSf https://setup.atuin.sh)"
-      become_user: "{{ created_username }}"
-      ignore_errors: yes
+        - name: Install Atuin
+          shell: /bin/bash -c "$(curl --proto '=https' --tlsv1.2 -sSf https://setup.atuin.sh)"
+          ignore_errors: yes
 
-    - name: Ensure Atuin environment is loaded
-      lineinfile:
-        path: "{{ zshrc_path }}"
-        regexp: 'eval "$(atuin init zsh)"'
-        line: 'eval "$(atuin init zsh)"'
-        state: present
-      become_user: "{{ created_username }}"
-      ignore_errors: yes
+        - name: Ensure Atuin environment is loaded
+          lineinfile:
+            path: "{{ zshrc_path }}"
+            regexp: 'eval "$(atuin init zsh)"'
+            line: 'eval "$(atuin init zsh)"'
+            state: present
+          ignore_errors: yes
 
-    - name: Install tmux plugin manager
-      git:
-        repo: https://github.com/tmux-plugins/tpm.git
-        dest: "{{ home_dir }}/.tmux/plugins/tpm"
-      become_user: "{{ created_username }}"
-      ignore_errors: yes
+        - name: Install tmux plugin manager
+          git:
+            repo: https://github.com/tmux-plugins/t
 
-    - name: Install Rust
-      shell: curl https://sh.rustup.rs -sSf | sh -s -- -y
-      register: install_rust_output
-      become_user: "{{ created_username }}"
-      ignore_errors: yes
+pm.git
+            dest: "{{ home_dir }}/.tmux/plugins/tpm"
+          ignore_errors: yes
 
-    - name: Ensure Rust environment is loaded
-      lineinfile:
-        path: "{{ zshrc_path }}"
-        regexp: 'source $HOME/.cargo/env'
-        line: 'source $HOME/.cargo/env'
-        state: present
-      become_user: "{{ created_username }}"
-      ignore_errors: yes
+        - name: Install Rust
+          shell: curl https://sh.rustup.rs -sSf | sh -s -- -y
+          register: install_rust_output
+          ignore_errors: yes
 
-    - name: Download zshrc file
-      get_url:
-        url: https://raw.githubusercontent.com/pastelnetwork/ansible_playbook_for_initial_setup_of_fresh_machine_for_sn/master/zshrc
-        dest: "{{ zshrc_path }}"
-        owner: "{{ created_username }}"
-        group: "{{ created_username }}"
-        mode: '0644'
-        backup: yes
-      become_user: "{{ created_username }}"
-      ignore_errors: yes
+        - name: Ensure Rust environment is loaded
+          lineinfile:
+            path: "{{ zshrc_path }}"
+            regexp: 'source $HOME/.cargo/env'
+            line: 'source $HOME/.cargo/env'
+            state: present
+          ignore_errors: yes
 
-    - name: Source the .zshrc file
-      command: zsh -lc "source {{ zshrc_path }}"
-      register: source_zshrc_file_output
-      become_user: "{{ created_username }}"
-      ignore_errors: yes
+        - name: Download zshrc file
+          get_url:
+            url: https://raw.githubusercontent.com/pastelnetwork/ansible_playbook_for_initial_setup_of_fresh_machine_for_sn/master/zshrc
+            dest: "{{ zshrc_path }}"
+            owner: "{{ created_username }}"
+            group: "{{ created_username }}"
+            mode: '0644'
+            backup: yes
+          ignore_errors: yes
 
-    - name: Download p10k settings file
-      get_url:
-        url: https://raw.githubusercontent.com/pastelnetwork/ansible_playbook_for_initial_setup_of_fresh_machine_for_sn/master/p10k.zsh
-        dest: "{{ home_dir }}/.p10k.zsh"
-        owner: "{{ created_username }}"
-        group: "{{ created_username }}"
-        mode: '0644'
-      become_user: "{{ created_username }}"
-      ignore_errors: yes
+        - name: Source the .zshrc file
+          command: zsh -lc "source {{ zshrc_path }}"
+          register: source_zshrc_file_output
+          ignore_errors: yes
 
-    - name: Clone pyenv repository
-      git:
-        repo: 'https://github.com/pyenv/pyenv.git'
-        dest: '{{ home_dir }}/.pyenv'
-        update: yes
-        force: yes
-      become_user: "{{ created_username }}"
-      ignore_errors: yes
+        - name: Download p10k settings file
+          get_url:
+            url: https://raw.githubusercontent.com/pastelnetwork/ansible_playbook_for_initial_setup_of_fresh_machine_for_sn/master/p10k.zsh
+            dest: "{{ home_dir }}/.p10k.zsh"
+            owner: "{{ created_username }}"
+            group: "{{ created_username }}"
+            mode: '0644'
+          ignore_errors: yes
 
-    - name: Check if zsh is installed
-      command: which zsh
-      register: zsh_installed
-      ignore_errors: yes
+        - name: Clone pyenv repository
+          git:
+            repo: 'https://github.com/pyenv/pyenv.git'
+            dest: '{{ home_dir }}/.pyenv'
+            update: yes
+            force: yes
+          ignore_errors: yes
 
-    - name: Set pyenv environment variables in .zshrc if zsh is found
-      blockinfile:
-        path: '{{ zshrc_path }}'
-        block: |
-          export PYENV_ROOT="$HOME/.pyenv"
-          export PATH="$PYENV_ROOT/bin:$PATH"
-          eval "$(pyenv init --path)"
-      when: zsh_installed.rc == 0
-      ignore_errors: yes
+        - name: Ensure pyenv environment variables are set in .zshrc
+          blockinfile:
+            path: '{{ zshrc_path }}'
+            block: |
+              export PYENV_ROOT="$HOME/.pyenv"
+              export PATH="$PYENV_ROOT/bin:$PATH"
+              eval "$(pyenv init --path)"
+          ignore_errors: yes
 
-    - name: Set pyenv environment variables in .bashrc if zsh is not found
-      blockinfile:
-        path: '{{ home_dir }}/.bashrc'
-        block: |
-          export PYENV_ROOT="$HOME/.pyenv"
-          export PATH="$PYENV_ROOT/bin:$PATH"
-          eval "$(pyenv init --path)"
-      when: zsh_installed.rc != 0
-      ignore_errors: yes
+        - name: Ensure pyenv environment variables are set in .bashrc
+          blockinfile:
+            path: '{{ home_dir }}/.bashrc'
+            block: |
+              export PYENV_ROOT="$HOME/.pyenv"
+              export PATH="$PYENV_ROOT/bin:$PATH"
+              eval "$(pyenv init --path)"
+          ignore_errors: yes
 
-    - name: Ensure pyenv is initialized in zsh
-      shell: |
-        export PYENV_ROOT="$HOME/.pyenv"
-        export PATH="$PYENV_ROOT/bin:$PATH"
-        eval "$(pyenv init --path)"
-        pyenv --version
-      args:
-        executable: /bin/zsh
-      register: pyenv_version_zsh
-      changed_when: "'pyenv' not in pyenv_version_zsh.stdout"
-      when: zsh_installed.rc == 0
-      ignore_errors: yes
+        - name: Ensure pyenv is initialized in zsh
+          shell: |
+            export PYENV_ROOT="$HOME/.pyenv"
+            export PATH="$PYENV_ROOT/bin:$PATH"
+            eval "$(pyenv init --path)"
+            pyenv --version
+          args:
+            executable: /bin/zsh
+          register: pyenv_version_zsh
+          changed_when: "'pyenv' not in pyenv_version_zsh.stdout"
+          ignore_errors: yes
 
-    - name: Ensure pyenv is initialized in bash
-      shell: |
-        export PYENV_ROOT="$HOME/.pyenv"
-        export PATH="$PYENV_ROOT/bin/$PATH"
-        eval "$(pyenv init --path)"
-        pyenv --version
-      args:
-        executable: /bin/bash
-      register: pyenv_version_bash
-      changed_when: "'pyenv' not in pyenv_version_bash.stdout"
-      when: zsh_installed.rc != 0
-      ignore_errors: yes
+        - name: Ensure pyenv is initialized in bash
+          shell: |
+            export PYENV_ROOT="$HOME/.pyenv"
+            export PATH="$PYENV_ROOT/bin/$PATH"
+            eval "$(pyenv init --path)"
+            pyenv --version
+          args:
+            executable: /bin/bash
+          register: pyenv_version_bash
+          changed_when: "'pyenv' not in pyenv_version_bash.stdout"
+          ignore_errors: yes
 
-    - name: Install Python 3.12 using pyenv in zsh
-      shell: |
-        export PYENV_ROOT="$HOME/.pyenv"
-        export PATH="$PYENV_ROOT/bin:$PATH"
-        eval "$(pyenv init --path)"
-        pyenv install -s 3.12
-      args:
-        executable: /bin/zsh
-      when: zsh_installed.rc == 0
-      ignore_errors: yes
+        - name: Install Python 3.12 using pyenv in zsh
+          shell: |
+            export PYENV_ROOT="$HOME/.pyenv"
+            export PATH="$PYENV_ROOT/bin:$PATH"
+            eval "$(pyenv init --path)"
+            pyenv install -s 3.12
+          args:
+            executable: /bin/zsh
+          ignore_errors: yes
 
-    - name: Install Python 3.12 using pyenv in bash
-      shell: |
-        export PYENV_ROOT="$HOME/.pyenv"
-        export PATH="$PYENV_ROOT/bin/$PATH"
-        eval "$(pyenv init --path)"
-        pyenv install -s 3.12
-      args:
-        executable: /bin/bash
-      when: zsh_installed.rc != 0
-      ignore_errors: yes
+        - name: Install Python 3.12 using pyenv in bash
+          shell: |
+            export PYENV_ROOT="$HOME/.pyenv"
+            export PATH="$PYENV_ROOT/bin/$PATH"
+            eval "$(pyenv init --path)"
+            pyenv install -s 3.12
+          args:
+            executable: /bin/bash
+          ignore_errors: yes
 
-    - name: Ensure curl is installed
-      package:
-        name: curl
-        state: present
-      ignore_errors: yes
-      
-    - name: Download and install NVM
-      shell: |
-        export NVM_DIR="$HOME/.nvm"
-        curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
-      args:
-        creates: "{{ home_dir }}/.nvm/nvm.sh"
-      environment:
-        HOME: "{{ home_dir }}"
-      become_user: "{{ created_username }}"
-      register: nvm_install
-      ignore_errors: yes
+        - name: Ensure curl is installed
+          package:
+            name: curl
+            state: present
+          ignore_errors: yes
 
-    - name: Ensure Node.js is available in future bash sessions
-      lineinfile:
-        path: "{{ home_dir }}/.bashrc"
-        line: 'export NVM_DIR="$HOME/.nvm" && . "$NVM_DIR/nvm.sh"'
-        state: present
-      become_user: "{{ created_username }}"
-      ignore_errors: yes
+        - name: Download and install NVM
+          shell: |
+            export NVM_DIR="$HOME/.nvm"
+            curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
+          args:
+            creates: "{{ home_dir }}/.nvm/nvm.sh"
+          register: nvm_install
+          ignore_errors: yes
 
-    - name: Ensure Node.js is available in future zsh sessions
-      lineinfile:
-        path: "{{ home_dir }}/.zshrc"
-        line: 'export NVM_DIR="$HOME/.nvm" && . "$NVM_DIR/nvm.sh"'
-        state: present
-      become_user: "{{ created_username }}"
-      ignore_errors: yes
+        - name: Check if NVM script exists
+          stat:
+            path: "{{ home_dir }}/.nvm/nvm.sh"
+          register: nvm_check
+          ignore_errors: yes
 
-    - name: Source NVM script and install Node.js 20.1
-      shell: |
-        . {{ home_dir }}/.nvm/nvm.sh
-        nvm install 20.1
-        nvm use 20.1
-        nvm alias default 20.1
-      args:
-        executable: /bin/bash
-      environment:
-        HOME: "{{ home_dir }}"
-      become_user: "{{ created_username }}"
-      when: nvm_check.stat.exists
-      ignore_errors: yes
+        - name: Ensure Node.js is available in future bash sessions
+          lineinfile:
+            path: "{{ home_dir }}/.bashrc"
+            line: 'export NVM_DIR="$HOME/.nvm" && . "$NVM_DIR/nvm.sh"'
+            state: present
+          ignore_errors: yes
 
-    - name: Source NVM in .profile for login shells
-      lineinfile:
-        path: "{{ home_dir }}/.profile"
-        line: 'export NVM_DIR="$HOME/.nvm" && . "$NVM_DIR/nvm.sh"'
-        state: present
-      become_user: "{{ created_username }}"
-      ignore_errors: yes
+        - name: Ensure Node.js is available in future zsh sessions
+          lineinfile:
+            path: "{{ home_dir }}/.zshrc"
+            line: 'export NVM_DIR="$HOME/.nvm" && . "$NVM_DIR/nvm.sh"'
+            state: present
+          ignore_errors: yes
+
+        - name: Source NVM script and install latest Node.js version
+          shell: |
+            . {{ home_dir }}/.nvm/nvm.sh
+            nvm install --latest-npm
+            nvm use node
+            nvm alias default node
+          args:
+            executable: /bin/bash
+          when: nvm_check.stat.exists
+          ignore_errors: yes
+
+        - name: Source NVM in .profile for login shells
+          lineinfile:
+            path: "{{ home_dir }}/.profile"
+            line: 'export NVM_DIR="$HOME/.nvm" && . "$NVM_DIR/nvm.sh"'
+            state: present
+          ignore_errors: yes
